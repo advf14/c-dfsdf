@@ -34,9 +34,19 @@ function getLogs(client){
 
 	var active2 = new Promise((resolve, reject) => {
 		TaiXiu_User.findOne({uid:client.UID}, 'tLineWinRed tLineLostRed tLineWinRedH tLineLostRedH', function(err, data_a2) {
-			data_a2 = data_a2._doc;
-			delete data_a2._id;
-			resolve(data_a2);
+			if (err || !data_a2) {
+				// Return default values if user not found or error
+				resolve({
+					tLineWinRed: 0,
+					tLineLostRed: 0,
+					tLineWinRedH: 0,
+					tLineLostRedH: 0
+				});
+			} else {
+				const result = data_a2._doc ? data_a2._doc : data_a2;
+				delete result._id;
+				resolve(result);
+			}
 		});
 	});
 
