@@ -29,19 +29,22 @@ let signMethod = function(client) {
 			this.fish.outGame();
 		}
 
-		if (this.redT) {
+		if (this.redT && this.redT.game && this.redT.game.xocxoc) {
 			let xocxoc = this.redT.game.xocxoc;
-			if (xocxoc.clients[this.UID] === this) {
-				delete xocxoc.clients[this.UID];
-				let clients = Object.keys(xocxoc.clients).length;
-				Object.values(xocxoc.clients).forEach(function(users){
-					if (client !== users) {
-						users.red({xocxoc:{ingame:{client:clients}}});
-					}
-				});
-			}
+			// Sử dụng phương thức removeClient mới
+			xocxoc.removeClient(this.UID);
+			
+			// Thông báo cho các client khác
+			let clients = Object.keys(xocxoc.clients).length;
+			Object.values(xocxoc.clients).forEach((users) => {
+				if (this !== users) {
+					users.red({xocxoc: {ingame: {client: clients}}});
+				}
+			});
+			
+			// Giải phóng bộ nhớ
 			xocxoc = null;
-			delete this.redT;
+			this.redT = null;
 		}
 
 		this.TTClear = null;

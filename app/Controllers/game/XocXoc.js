@@ -7,6 +7,7 @@ const history = require('./XocXoc/history');
 class XocXoc {
     constructor(io) {
         this.io = io;
+        this.clients = {}; // Khởi tạo đối tượng lưu trữ clients
         // Khởi tạo các biến cần thiết cho game
         this.initializeGame();
     }
@@ -31,7 +32,22 @@ class XocXoc {
         }
     }
 
-    // Thêm các phương thức khác của class XocXoc ở đây
+    // Thêm client vào danh sách
+    addClient(uid, client) {
+        this.clients[uid] = client;
+    }
+
+    // Xóa client khỏi danh sách
+    removeClient(uid) {
+        if (this.clients[uid]) {
+            delete this.clients[uid];
+        }
+    }
+
+    // Lấy thông tin client
+    getClient(uid) {
+        return this.clients[uid];
+    }
 }
 
 module.exports = XocXoc;
