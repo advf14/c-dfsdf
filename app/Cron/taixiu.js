@@ -236,40 +236,67 @@ let setTaiXiu_user = function(phien, dice){
                 if (list.length !== 0){
                         Promise.all(list.map(function(obj){
                                 let action = new Promise((resolve, reject)=> {
-                                        TaiXiu_User.findOne({uid:obj.uid}, function(error, data) {
-                                                if (!!data) {
-                                                        let bet_thua = obj.bet-obj.tralai;
-                                                        let bet = obj.win ? obj.betwin+obj.bet : bet_thua;
-                                                        let update = {};
-                                                        if (bet_thua >= 10000) {
-                                                                update = {
-                                                                        tLineWinRed:   obj.win && data.tLineWinRed < data.tLineWinRedH+1 ? data.tLineWinRedH+1 : data.tLineWinRed,
-                                                                        tLineLostRed:  !obj.win && data.tLineLostRed < data.tLineLostRedH+1 ? data.tLineLostRedH+1 : data.tLineLostRed,
-                                                                        tLineWinRedH:  obj.win ? data.tLineWinRedH+1 : 0,
-                                                                        tLineLostRedH: obj.win ? 0 : data.tLineLostRedH+1,
-                                                                        last:          phien,
-                                                                };
-                                                                if (obj.win) {
-                                                                        if (data.tLineWinRedH == 0) {
-                                                                                update.first = phien;
+                                        UserInfo.findOne({id: obj.uid}, function(err, user) {
+                                                if (!user) return resolve(null);
+                                                
+                                                let bet_thua = obj.bet - obj.tralai;
+                                                let winAmount = obj.win ? obj.betwin : 0;
+                                                let bet = obj.win ? obj.betwin + obj.bet : bet_thua;
+                                                
+                                                // Cập nhật số dư người chơi nếu thắng
+                                                if (winAmount > 0) {
+                                                    user.red += winAmount;
+                                                    user.save();
+                                                }
+                                                
+                                                // Cập nhật thống kê
+                                                TaiXiu_User.findOne({uid: obj.uid}, function(error, data) {
+                                                    if (!data) return resolve(null);
+                                                    
+                                                    let update = {};
+                                                    if (bet_thua >= 10000) {
+                                                        update = {
+                                                            tLineWinRed:   obj.win && data.tLineWinRed < data.tLineWinRedH+1 ? data.tLineWinRedH+1 : data.tLineWinRed,
+                                                            tLineLostRed:  !obj.win && data.tLineLostRed < data.tLineLostRedH+1 ? data.tLineLostRedH+1 : data.tLineLostRed,
+                                                            tLineWinRedH:  obj.win ? data.tLineWinRedH+1 : 0,
+                                                            tLineLostRedH: obj.win ? 0 : data.tLineLostRedH+1,
+                                                            last: phien,
+                                                        };
+                                                        
+                                                        if (obj.win) {
+                                                            if (data.tLineWinRedH == 0) update.first = phien;
+                                                        } else {
+                                                            if (data.tLineLostRedH == 0) update.first = phien;
+                                                        }
+                                                    }
+
+                                                    if (Object.keys(update).length > 0) {
+                                                        TaiXiu_User.updateOne({uid: obj.uid}, {$set: update}).exec();
+                                                    }
+
+                                                    // Gửi thông báo thắng cược
+                                                    if (obj.win > 0) {
+                                                        if (io.users[obj.uid] && Array.isArray(io.users[obj.uid])) {
+                                                            io.users[obj.uid].forEach(function(client) {
+                                                                if (client && typeof client.red === 'function') {
+                                                                    // Gửi thông báo cập nhật số dư
+                                                                    client.red({
+                                                                        user: {red: user.red},
+                                                                        taixiu: {
+                                                                            status: {
+                                                                                win: winAmount,
+                                                                                select: obj.select,
+                                                                                bet: bet,
+                                                                                balance: user.red
+                                                                            }
                                                                         }
-                                                                }else{
-                                                                        if (data.tLineLostRedH == 0) {
-                                                                                update.first = phien;
-                                                                        }
+                                                                    });
                                                                 }
+                                                            });
                                                         }
-
-                                                        !!Object.entries(update).length && TaiXiu_User.updateOne({uid: obj.uid}, {$set:update}).exec();
-
-                                                        if(obj.win > 0 && io.users[obj.uid] && Array.isArray(io.users[obj.uid])){
-                                                                io.users[obj.uid].forEach(function(client){
-                                                                    if (client && typeof client.red === 'function') {
-                                                                        client.red({taixiu:{status:{win:obj.win, select:obj.select, bet: bet}}});
-                                                                    }
-                                                                });
-                                                        }
-                                                        resolve({uid:obj.uid, betwin:obj.betwin});
+                                                    }
+                                                    
+                                                    resolve({uid: obj.uid, betwin: obj.betwin, win: winAmount});
                                                 }else{
                                                         resolve(null);
                                                 }
