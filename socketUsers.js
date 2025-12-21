@@ -3,7 +3,7 @@ let User      = require('./app/Models/Users');
 let UserInfo  = require('./app/Models/UserInfo');
 let helpers   = require('./app/Helpers/Helpers');
 let socket    = require('./app/socket.js');
-let captcha   = require('./captcha');
+// captcha removed
 let forgotpass = require('./app/Controllers/user/for_got_pass');
 
 // Authenticate!
@@ -66,87 +66,54 @@ let authenticate = function(client, data, callback) {
 			}else{
 				try {
 					username = username.toLowerCase();
-					// Đăng Ký
+					// Đăng Ký (captcha disabled) 
 					if (register) {
-						if (!client.c_captcha) {
-							client.c_captcha('signUp');
-							callback({title: 'ĐĂNG KÝ', text: 'Captcha không tồn tại.'}, false);
-						}else{
-							let checkCaptcha = new RegExp();
-							checkCaptcha     = checkCaptcha.test(captcha);
-							if (checkCaptcha) {
-								User.findOne({'local.username':username}).exec(function(err, check){
-									if (!!check){
-										client.c_captcha('signUp');
-										callback({title: 'ĐĂNG KÝ', text: 'Tên tài khoản đã tồn tại !!'}, false);
-									}else{
-										User.create({'local.username':username, 'local.password':helpers.generateHash(password), 'local.regDate': new Date()}, function(err, user){
-											if (!!user){
+						username = username.toLowerCase();
+						User.findOne({'local.username':username}).exec(function(err, check){
+							if (!!check){
+								callback({title: 'ĐĂNG KÝ', text: 'Tên tài khoản đã tồn tại !!'}, false);
+							}else{
+								User.create({'local.username':username, 'local.password':helpers.generateHash(password), 'local.regDate': new Date()}, function(err, user){
+									if (!!user){
+										// create UserInfo so first() can authorize immediately
+										try{
+											UserInfo.create({id: user._id.toString(), name: username, avatar:'0'}, function(errUi, ui){
 												client.UID = user._id.toString();
 												callback(false, true);
-											}else{
-												client.c_captcha('signUp');
-												callback({title: 'ĐĂNG KÝ', text: 'Tên tài khoản đã tồn tại !!'}, false);
-											}
-										});
+											});
+										}catch(e){
+											client.UID = user._id.toString();
+											callback(false, true);
+										}
+									}else{
+										callback({title: 'ĐĂNG KÝ', text: 'Tên tài khoản đã tồn tại !!'}, false);
 									}
 								});
-							}else{
-								client.c_captcha('signUp');
-								callback({title: 'ĐĂNG KÝ', text: 'Captcha không đúng.'}, false);
 							}
-						}
+						});
 					} else {
-						// Đăng Nhập
+						// Đăng Nhập (captcha disabled)
 						User.findOne({'local.username':username}, function(err, user){
 							if (user){
 								if (user.lock === true) {
 									callback({title:'CẤM', text:'Tài khoản bị vô hiệu hóa.'}, false);
 									return void 0;
 								}
-								if (void 0 !== user.fail && user.fail > 3) {
-									if (!captcha || !client.c_captcha) {
-										client.c_captcha('signIn');
-										callback({title:'ĐĂNG NHẬP', text:'Phát hiện truy cập trái phép, vui lòng nhập captcha để tiếp tục.'}, false);
-									}else{
-										let checkCLogin = new RegExp('^' + client.captcha + '$', 'i');
-										checkCLogin     = checkCLogin.test(captcha);
-										if (checkCLogin) {
-											if (user.validPassword(password)){
-												user.fail = 0;
-												user.save();
-												client.UID = user._id.toString();
-												callback(false, true);
-												global['userOnline']++;
-											}else{
-												client.c_captcha('signIn');
-												user.fail += 1;
-												user.save();
-												callback({title: 'ĐĂNG NHẬP', text: 'Mật khẩu không chính xác!!'}, false);
-											}
-										}else{
-											user.fail += 1;
-											user.save();
-											client.c_captcha('signIn');
-											callback({title: 'ĐĂNG NHẬP', text: 'Captcha không đúng...'}, false);
-										}
-									}
-								}else{
-									if (user.validPassword(password)){
+								if (user.validPassword(password)){
 									if(!user.local.ban_login){
 										user.fail = 0;
 										user.save();
 										client.UID = user._id.toString();
 										callback(false, true);
+										global['userOnline']++;
 									}else{
 										callback({title: 'ĐĂNG NHẬP', text: 'Tài khoản bị khoá. Vui lòng liên hệ CSKH để được hỗ trợ'}, false);
 									}
-									}else{
-										user.fail  = user.fail>>0;
-										user.fail += 1;
-										user.save();
-										callback({title: 'ĐĂNG NHẬP', text: 'Mật khẩu không chính xác!!'}, false);
-									}
+								}else{
+									user.fail  = user.fail>>0;
+									user.fail += 1;
+									user.save();
+									callback({title: 'ĐĂNG NHẬP', text: 'Mật khẩu không chính xác!!'}, false);
 								}
 							}else{
 								callback({title: 'ĐĂNG NHẬP', text: 'Tên Tài Khoản không tồn tại!!'}, false);
@@ -165,7 +132,7 @@ module.exports = function(ws, redT){
 	ws.auth      = false;
 	ws.UID       = null;
 	ws.captcha   = {};
-	ws.c_captcha = captcha;
+	ws.c_captcha = function(){};
 	ws.red = function(data){
 		try {
 			this.readyState == 1 && this.send(JSON.stringify(data));
@@ -176,9 +143,7 @@ module.exports = function(ws, redT){
 		try {
 			if (!!message) {
 				message = JSON.parse(message);
-				if (!!message.captcha) {
-					this.c_captcha(message.captcha);
-				}
+				// captcha handling disabled
 				if (!!message.forgotpass) {
 					forgotpass(this, message.forgotpass);
 				}

@@ -2,7 +2,7 @@
 let validator = require('validator');
 let User      = require('./app/Models/Admin');
 let socket    = require('./app/Controllers/admin/socket.js');
-let captcha   = require('./captcha');
+// captcha removed
 let helpers   = require('./app/Helpers/Helpers');
 let getConfig = require('./app/Helpers/Helpers').getConfig;
 let setConfig = require('./app/Helpers/Helpers').setConfig;
@@ -31,51 +31,17 @@ let authenticate = function(client, data, callback) {
 					username = username.toLowerCase();
 					User.findOne({'username':username, 'id':1990}, function(err, user){
 						if (!!user) {
-							if (void 0 !== user.fail && user.fail > 3) {
-								if (!captcha || !client.c_captcha) {
-									client.c_captcha('signIn');
-									callback({title:'ĐĂNG NHẬP', text:'Phát hiện truy cập trái phép, Tài khoản tạm khóa.'}, false);	
-								}else{
-									let checkCLogin = new RegExp('^' + client.captcha + '$', 'i');
-									checkCLogin     = checkCLogin.test(captcha);
-									if (checkCLogin) {
-										if (user.validPassword(password)){
-											user.fail = 0;
-											user.save();
-											client.UID = user._id.toString();
-											callback(false, true);
-										}else{
-											client.c_captcha('signIn');
-											user.fail += 1;
-											user.save();
-											callback({title:'ĐĂNG NHẬP', text:'Mật khẩu không chính xác!!'}, false);
-										}
+									if (user.validPassword(password)){
+										user.fail = 0;
+										user.save();
+										client.UID = user._id.toString();
+										callback(false, true);
 									}else{
+										user.fail  = user.fail>>0;
 										user.fail += 1;
 										user.save();
-										client.c_captcha('signIn');
-										callback({title:'ĐĂNG NHẬP', text:'Captcha không đúng...'}, false);	
+										callback({title:'ĐĂNG NHẬP', text:'Mật khẩu không chính xác!!'}, false);
 									}
-									if (user.fail > 6) {
-										configAdmin = {'anti': true};
-										setConfig('admin', configAdmin);
-										callback({title:'ĐĂNG NHẬP', text:'Phát hiện truy cập trái phép, Đóng đăng nhập.'}, false);	
-										return void 0;
-									}
-								}
-							}else{
-								if (user.validPassword(password)){
-									user.fail = 0;
-									user.save();
-									client.UID = user._id.toString();
-									callback(false, true);
-								}else{
-									user.fail  = user.fail>>0;
-									user.fail += 1;
-									user.save();
-									callback({title:'ĐĂNG NHẬP', text:'Mật khẩu không chính xác!!'}, false);
-								}
-							}
 						}else{
 							callback({title:'ĐĂNG NHẬP', text:'Tài Khoản hoặc mật khẩu không chính xác!!'}, false);
 						}
@@ -93,7 +59,7 @@ module.exports = function(ws, redT){
 	ws.auth  = false;
 	ws.UID   = null;
 	ws.captcha   = {};
-	ws.c_captcha = captcha;
+	ws.c_captcha = function(){};
 	ws.red = function(data){
 		try {
 			this.readyState == 1 && this.send(JSON.stringify(data));
@@ -104,9 +70,7 @@ module.exports = function(ws, redT){
 		try {
 			if (!!message) {
 				message = JSON.parse(message);
-				if (!!message.captcha) {
-					this.c_captcha(message.captcha);
-				}
+				// captcha handling disabled
 				if (this.auth == false && !!message.authentication) {
 					authenticate(this, message.authentication, function(err, success) {
 						if (success) {
