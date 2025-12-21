@@ -1,7 +1,7 @@
 
 let Poker  = require('../Controllers/game/poker/Controller');
 let BaCay  = require('../Controllers/game/BaCay/Controller');
-let XocXoc = require('../Controllers/game/XocXoc/init');
+let XocXoc = require('../Controllers/game/XocXoc');
 let BanCa  = require('../Controllers/game/BanCa/Controller');
 let GiftCode = require('./autoGiftcode');
 
