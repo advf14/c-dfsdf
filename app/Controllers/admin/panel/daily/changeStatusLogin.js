@@ -1,5 +1,5 @@
 var Users = require('../../../../Models/Users');
-module.exports = function(req, res) {
+module.exports = function(req, res, redT) {
     var { query } = req || {};
     var { status, id } = query || {};
     Users.updateOne({ _id: id }, { $set: { 'local.ban_login': status } }).exec(function(err, result) {

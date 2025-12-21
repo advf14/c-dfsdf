@@ -6,13 +6,13 @@ var Phone = require('../../../../Models/Phone');
 var validator = require('validator');
 var Helper = require('../../../../Helpers/Helpers');
 
-module.exports = function(req, res) {
+module.exports = function(req, res, redT) {
     const { body, userAuth } = req || {}
     console.log('userAuth', userAuth);
     const { Data: data } = body || {};
     data.name = data.nickname;
-    data.red = data.valueRed;
-    if (!!data && !!data.name && !!data.desc) {
+    data.red = data.valueRed || data.red;
+    if (!!data && !!data.name && (data.desc || data.message)) {
         if (!validator.isLength(data.name, { min: 3, max: 17 })) {
             res.json({
                 status: 200,
@@ -66,9 +66,10 @@ module.exports = function(req, res) {
                             } else {
 
                                 var thanhTien = red;
-                                var create = { 'from': userAuth.nickname, 'to': to.name, 'red': red, 'red_c': thanhTien, 'time': new Date(), message: data.desc };
-                                if (void 0 !== data.message && !validator.isEmpty(data.message.trim())) {
-                                    create = Object.assign(create, { message: data.message });
+                                var message = data.desc || data.message || '';
+                                var create = { 'from': userAuth.nickname, 'to': to.name, 'red': red, 'red_c': thanhTien, 'time': new Date(), message: message };
+                                if (!validator.isEmpty(message.trim())) {
+                                    create = Object.assign(create, { message: message });
                                 }
                                 ChuyenRed.create(create, function() {
                                     res.json({
@@ -80,7 +81,7 @@ module.exports = function(req, res) {
                                     });
                                 });
                                 UserInfo.updateOne({ name: to.name }, { $inc: { red: thanhTien } }).exec();
-                                if (void 0 !== redT.users[to.id]) {
+                                if (redT && redT.users && void 0 !== redT.users[to.id]) {
                                     Promise.all(redT.users[to.id].map(function(obj) {
                                         obj.red({ notice: { title: 'CHUYỂN XU', text: `Bạn nhận được ` + Helper.numberWithCommas(thanhTien) + ' XU.' + '\n' + 'Từ Admin: ' + userAuth.nickname }, user: { red: to.red * 1 + thanhTien } });
                                     }));

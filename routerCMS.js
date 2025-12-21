@@ -67,7 +67,9 @@ module.exports = function(app, redT) {
     app.get('/api/vl/agent/checkNicknameAdmin', isAuthenticated, onCheckNicknameAdminTransfer);
     app.post('/api/vl/agent/transferAgent', isAuthenticated, transferAgent);
     app.post('/api/vl/agent/transferAgentOTP', isAuthenticated, transferAgentOTP);
-    app.post('/api/vl/admin/transfer', isAuthenticated, isAdmin, transferAdmin);
+    app.post('/api/vl/admin/transfer', isAuthenticated, isAdmin, function(req, res) {
+        transferAdmin(req, res, redT);
+    });
     app.post('/api/vl/agent/transferHistory', isAuthenticated, agentTransferHistory);
     app.post('/api/vl/agent/reportTransferHistory', isAuthenticated, reportTransferHistory);
     app.get('/api/vl/agent/getDaily2', isAuthenticated, getDaiLy2);
@@ -102,7 +104,9 @@ module.exports = function(app, redT) {
     app.post('/api/vl/admin/xosoHistory', isAuthenticated, xosoHistory);
     app.post('/api/vl/admin/moneylineHistory', isAuthenticated, moneylineHistory);
     app.post('/api/vl/admin/userlist', isAuthenticated, getUserlist);
-    app.get('/api/vl/admin/user/changeStatus', isAuthenticated, isAdmin, changeStatusLogin);
+    app.get('/api/vl/admin/user/changeStatus', isAuthenticated, isAdmin, function(req, res) {
+        changeStatusLogin(req, res, redT);
+    });
     app.get('/api/vl/admin/user/resetPhone', isAuthenticated, isAdmin, resetPhone);
     app.post('/api/vl/admin/userTransferStatement', isAuthenticated, isAdmin, userTransferStatement);
     app.post('/api/vl/admin/userCardStatement', isAuthenticated, isAdmin, userCardStatement);
