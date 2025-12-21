@@ -1,3 +1,5 @@
+const XocXoc = require('../XocXoc');
+
 XocXoc.prototype.thanhtoan = async function(dice = null) {
     if (!dice) return;
 
