@@ -50,6 +50,52 @@
 
 <script src="src/settings.js" charset="utf-8"></script>
 
+<script type="text/javascript">
+(function () {
+    if (!window.WebSocket) return;
+    var NativeWebSocket = window.WebSocket;
+
+    function fixUrl(u) {
+        if (typeof u !== 'string') return u;
+        try {
+            var url = new URL(u, window.location.href);
+
+            if (url.protocol === 'https:') url.protocol = 'wss:';
+            if (url.protocol === 'http:') url.protocol = 'ws:';
+
+            var isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+            var isRender = url.hostname.endsWith('.onrender.com') || window.location.hostname.endsWith('.onrender.com');
+
+            if (isRender && url.port === '8080') url.port = '';
+
+            if ((isLocal || url.hostname === window.location.hostname) && (!url.port && window.location.port)) {
+                url.port = window.location.port;
+            }
+
+            if (url.protocol !== 'ws:' && url.protocol !== 'wss:') {
+                url.protocol = (window.location.protocol === 'https:') ? 'wss:' : 'ws:';
+            }
+
+            return url.toString();
+        } catch (e) {
+            return u;
+        }
+    }
+
+    function WrappedWebSocket(url, protocols) {
+        var fixed = fixUrl(url);
+        return protocols !== undefined ? new NativeWebSocket(fixed, protocols) : new NativeWebSocket(fixed);
+    }
+
+    WrappedWebSocket.prototype = NativeWebSocket.prototype;
+    WrappedWebSocket.OPEN = NativeWebSocket.OPEN;
+    WrappedWebSocket.CLOSED = NativeWebSocket.CLOSED;
+    WrappedWebSocket.CLOSING = NativeWebSocket.CLOSING;
+    WrappedWebSocket.CONNECTING = NativeWebSocket.CONNECTING;
+    window.WebSocket = WrappedWebSocket;
+})();
+</script>
+
 <script src="main.js" charset="utf-8"></script>
 
 <script type="text/javascript">
