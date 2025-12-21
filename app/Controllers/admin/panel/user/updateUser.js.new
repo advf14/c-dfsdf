@@ -1,4 +1,3 @@
-
 const Users = require('../../../../Models/Users');
 const UserInfo = require('../../../../Models/UserInfo');
 const Phone = require('../../../../Models/Phone');
@@ -222,69 +221,3 @@ module.exports = async function(client, data) {
         });
     }
 };
-        const existingPhone = await Phone.findOne({'phone': phoneCrack.phone}).exec();
-        if (existingPhone && existingPhone.uid !== userId) {
-            client.red({notice:{title:'LỖI', text:'Số điện thoại đã được sử dụng'}});
-            return;
-        }
-
-        // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
-        const session = await Phone.startSession();
-        session.startTransaction();
-        
-        try {
-            // Xóa thông tin cũ nếu có
-            const currentPhone = await Phone.findOne({'uid': userId}).session(session).exec();
-            
-            if (currentPhone) {
-                await Promise.all([
-                    Telegram.deleteOne({'phone': currentPhone.phone}).session(session).exec(),
-                    OTP.deleteMany({'uid': userId, 'phone': currentPhone.phone}).session(session).exec(),
-                    UserInfo.updateOne(
-                        {'id': userId}, 
-                        {$set: {veryphone: false}},
-                        {session}
-                    ).exec()
-                ]);
-                
-                // Cập nhật số mới
-                currentPhone.phone = phoneCrack.phone;
-                currentPhone.region = phoneCrack.region;
-                await currentPhone.save({session});
-            } else {
-                // Tạo mới nếu chưa có
-                await Phone.create([{
-                    'uid': userId, 
-                    'phone': phoneCrack.phone, 
-                    'region': phoneCrack.region
-                }], {session});
-            }
-            
-            await session.commitTransaction();
-            session.endSession();
-            
-            client.red({
-                notice:{
-                    title: 'THÀNH CÔNG',
-                    text: 'Cập nhật số điện thoại thành công'
-                }
-            });
-            
-        } catch (error) {
-            await session.abortTransaction();
-            session.endSession();
-            throw error; // Ném lỗi để xử lý ở catch bên ngoài
-        }
-        
-    } catch (error) {
-        console.error('Lỗi khi cập nhật số điện thoại:', error);
-        if (client && typeof client.red === 'function') {
-            client.red({
-                notice:{
-                    title: 'LỖI',
-                    text: 'Có lỗi khi cập nhật số điện thoại. Vui lòng thử lại sau.'
-                }
-            });
-        }
-        throw error; // Ném lại lỗi để xử lý ở hàm gọi
-    }
