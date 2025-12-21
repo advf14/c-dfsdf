@@ -262,9 +262,11 @@ let setTaiXiu_user = function(phien, dice){
 
                                                         !!Object.entries(update).length && TaiXiu_User.updateOne({uid: obj.uid}, {$set:update}).exec();
 
-                                                        if(obj.win > 0){
+                                                        if(obj.win > 0 && io.users[obj.uid] && Array.isArray(io.users[obj.uid])){
                                                                 io.users[obj.uid].forEach(function(client){
+                                                                    if (client && typeof client.red === 'function') {
                                                                         client.red({taixiu:{status:{win:obj.win, select:obj.select, bet: bet}}});
+                                                                    }
                                                                 });
                                                         }
                                                         resolve({uid:obj.uid, betwin:obj.betwin});
