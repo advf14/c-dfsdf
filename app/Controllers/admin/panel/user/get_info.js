@@ -190,6 +190,11 @@ module.exports = function(client, id){
 				candy:     resulf[10],
 			}}});
 			client = null;
+		}).catch(err => {
+			console.log('Error in get_info:', err);
+			if (client) {
+				client.red({error: 'Lỗi tải thông tin người dùng'});
+			}
 		});
 	}
 }

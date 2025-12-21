@@ -7,97 +7,120 @@ var validator = require('validator');
 var Helper = require('../../../../Helpers/Helpers');
 
 module.exports = function(req, res, redT) {
-    const { body, userAuth } = req || {}
-    console.log('userAuth', userAuth);
-    const { Data: data } = body || {};
-    data.name = data.nickname;
-    data.red = data.valueRed || data.red;
-    if (!!data && !!data.name && (data.desc || data.message)) {
-        if (!validator.isLength(data.name, { min: 3, max: 17 })) {
-            res.json({
+    try {
+        const { body, userAuth } = req || {};
+        const { Data: data } = body || {};
+        
+        // Xử lý dữ liệu đầu vào
+        data.name = data.nickname || data.name;
+        data.red = data.valueRed || data.red;
+        data.desc = data.desc || data.message || 'Admin chuyển tiền';
+
+        if (!data || !data.name || !data.red) {
+            return res.json({ 
+                status: 200, 
+                success: false, 
+                data: { message: 'Vui lòng nhập đủ thông tin!' } 
+            });
+        }
+
+        var red = parseInt(data.red) || 0;
+        var name = (data.name + '').toLowerCase().trim();
+
+        // Validate dữ liệu
+        if (name.length < 3 || name.length > 17 || red < 10000) {
+            return res.json({
                 status: 200,
                 success: false,
-                data: {
-                    nickname: 'Nickname không hợp lệ.'
-                }
+                data: { message: 'Thông tin không hợp lệ!' }
             });
-        } else {
-            var red = data.red >> 0;
-            var name = '' + data.name + '';
+        }
 
-            if (validator.isEmpty(name) ||
-                Math.abs(red) < 10000 ||
-                name.length > 17 ||
-                name.length < 3
-            ) {
-                res.json({
+        // Kiểm tra người dùng
+        Promise.all([
+            tab_DaiLy.findOne({
+                $or: [
+                    { nickname: name },
+                    { nickname: userAuth.nickname }
+                ]
+            }).exec(),
+            UserInfo.findOne({ name: name }, 'id name red').exec(),
+            UserInfo.findOne({ id: userAuth.id }, 'red').exec()
+        ])
+        .then(([daily, to, user]) => {
+            if (!to || !user) {
+                return res.json({ 
+                    status: 200, 
+                    success: false, 
+                    data: { message: 'Không tìm thấy thông tin người dùng!' } 
+                });
+            }
+
+            if (to.id == userAuth.id) {
+                return res.json({
                     status: 200,
                     success: false,
-                    data: {
-                        message: 'Kiểm tra lại các thông tin.'
-                    }
+                    data: { message: 'Không thể tự chuyển cho chính mình!' }
                 });
-            } else {
-
-                name = name.toLowerCase();
-                var active1 = tab_DaiLy.findOne({
-                    $or: [
-                        { nickname: name },
-                        { nickname: userAuth.nickname }
-                    ]
-                }).exec();
-
-                var active2 = UserInfo.findOne({ name: name }, 'id name red').exec();
-                var active3 = UserInfo.findOne({ id: userAuth.id }, 'red').exec();
-                Promise.all([active1, active2, active3])
-                    .then(valuesCheck => {
-                        var daily = valuesCheck[0];
-                        var to = valuesCheck[1];
-                        var user = valuesCheck[2];
-                        if (!!to) {
-                            if (to.id == userAuth.id) {
-                                res.json({
-                                    status: 200,
-                                    success: false,
-                                    data: {
-                                        nickname: 'Bạn không thể chuyển cho chính mình.'
-                                    }
-                                });
-                            } else {
-
-                                var thanhTien = red;
-                                var message = data.desc || data.message || '';
-                                var create = { 'from': userAuth.nickname, 'to': to.name, 'red': red, 'red_c': thanhTien, 'time': new Date(), message: message };
-                                if (!validator.isEmpty(message.trim())) {
-                                    create = Object.assign(create, { message: message });
-                                }
-                                ChuyenRed.create(create, function() {
-                                    res.json({
-                                        status: 200,
-                                        success: true,
-                                        data: {
-                                            message: red > 0 ? 'Cộng tiền thành công.' : 'Trừ tiền thành công.'
-                                        }
-                                    });
-                                });
-                                UserInfo.updateOne({ name: to.name }, { $inc: { red: thanhTien } }).exec();
-                                if (redT && redT.users && void 0 !== redT.users[to.id]) {
-                                    Promise.all(redT.users[to.id].map(function(obj) {
-                                        obj.red({ notice: { title: 'CHUYỂN XU', text: `Bạn nhận được ` + Helper.numberWithCommas(thanhTien) + ' XU.' + '\n' + 'Từ Admin: ' + userAuth.nickname }, user: { red: to.red * 1 + thanhTien } });
-                                    }));
-                                }
-                            }
-                        } else {
-                            res.json({
-                                status: 200,
-                                success: false,
-                                data: {
-                                    nickname: 'Người dùng không tồn tại.'
-                                }
-                            });
-                        }
-                    });
             }
-        }
+
+            // Thực hiện chuyển tiền
+            var thanhTien = red;
+            var create = { 
+                from: userAuth.nickname, 
+                to: to.name, 
+                red: red, 
+                red_c: thanhTien, 
+                time: new Date(), 
+                message: data.desc 
+            };
+
+            // Cập nhật số dư người nhận
+            UserInfo.updateOne(
+                { name: to.name }, 
+                { $inc: { red: thanhTien } }
+            ).exec();
+
+            // Ghi nhận lịch sử giao dịch
+            new ChuyenRed(create).save();
+
+            // Gửi thông báo realtime nếu người dùng đang online
+            if (redT && redT.users && redT.users[to.id]) {
+                redT.users[to.id].red({ 
+                    notice: { 
+                        title: 'CHUYỂN XU', 
+                        text: `Bạn nhận được ${Helper.numberWithCommas(thanhTien)} XU từ Admin: ${userAuth.nickname}`
+                    }, 
+                    user: { 
+                        red: (to.red || 0) + thanhTien 
+                    } 
+                });
+            }
+
+            res.json({
+                status: 200,
+                success: true,
+                data: {
+                    message: `Chuyển ${Helper.numberWithCommas(thanhTien)} XU thành công cho ${to.name}`
+                }
+            });
+
+        })
+        .catch(err => {
+            console.error('Transfer error:', err);
+            res.json({ 
+                status: 500, 
+                success: false, 
+                data: { message: 'Có lỗi xảy ra, vui lòng thử lại!' } 
+            });
+        });
+
+    } catch (error) {
+        console.error('Transfer admin error:', error);
+        res.json({ 
+            status: 500, 
+            success: false, 
+            data: { message: 'Lỗi hệ thống, vui lòng liên hệ admin!' } 
+        });
     }
-}
+};
