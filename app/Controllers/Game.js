@@ -369,7 +369,7 @@ module.exports = function(client, data){
 									}
 								});
 							}else{
-							XocXoc(selfClient, selfData.xocxoc);
+							new XocXoc(selfClient, selfData.xocxoc);
 						}
 						}
 
