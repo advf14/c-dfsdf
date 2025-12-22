@@ -27,11 +27,22 @@ module.exports = function(client){
 
 		var tien = vipHT*red; // Tiền thưởng lastVip
 		if (tien > 0) {
-			user.red     = user.red*1 + tien; // cập nhật red
-			user.vip    += vipHT;             // vip tích lũy
-			user.lastVip = user.redPlay;      // Nhận thưởng lần cuối
-			user.save();
-			client.red({profile:{level: {level: 1, vipNext: 100, vipPre: 0, vipTL: user.vip+vipHT, vipHT: 0}}, notice:{text: 'Bạn nhận được ' + helper.numberWithCommas(tien) + ' K', title: 'THÀNH CÔNG'}, user:{red: user.red}});
+			// Fix: Sử dụng atomic $inc operation để tránh race condition
+			UserInfo.findByIdAndUpdate(
+				user._id,
+				{
+					$inc: {red: tien, vip: vipHT},
+					$set: {lastVip: user.redPlay}
+				},
+				{new: true},
+				function(err, updatedUser) {
+					if (!err && updatedUser) {
+						client.red({profile:{level: {level: 1, vipNext: 100, vipPre: 0, vipTL: updatedUser.vip, vipHT: 0}}, notice:{text: 'Bạn nhận được ' + helper.numberWithCommas(tien) + ' K', title: 'THÀNH CÔNG'}, user:{red: updatedUser.red}});
+					} else {
+						client.red({notice:{text: 'Lỗi cập nhật thưởng...', title: 'LỖI'}});
+					}
+				}
+			);
 		}else{
 			client.red({notice:{text: 'Bạn chưa đủ cấp VIP để đổi thưởng...', title: 'THẤT BẠI'}});
 		}

@@ -513,7 +513,8 @@ var BaCay = function(bacay, singID, game){
 						player.balans += balans;
 						UserInfo.findOneAndUpdate({id:player.uid}, {$inc:{red:balans}}).exec(function(err, user){
 							if (!!user) {
-								player.balans = user.red*1+player.betGa;
+								// Fix: user.red đã được cập nhật qua $inc, không cần cộng lại
+								player.balans = user.red*1;
 							}
 							player = null;
 						});
@@ -541,7 +542,8 @@ var BaCay = function(bacay, singID, game){
 				player.balans += win;
 				UserInfo.findOneAndUpdate({id:player.uid}, {$inc:{red:win}}).exec(function(err, user){
 					if (!!user) {
-						player.balans = user.red*1+win;
+						// Fix: user.red đã được cập nhật qua $inc, không cần cộng lại win
+						player.balans = user.red*1;
 					}
 					player = null;
 					win    = null;
@@ -553,7 +555,8 @@ var BaCay = function(bacay, singID, game){
 			this.chuong.totall -= totall;
 			UserInfo.findOneAndUpdate({id:this.chuong.uid}, {$inc:{red:-totall}}).exec(function(err, user){
 				if (!!user) {
-					this.chuong.balans = user.red-totall;
+					// Fix: user.red đã được cập nhật qua $inc:{red:-totall}, không cần trừ thêm
+					this.chuong.balans = user.red*1;
 				}
 				totall = null;
 			}.bind(this));
@@ -618,7 +621,8 @@ var BaCay = function(bacay, singID, game){
 			this.chuong.totall += totall;
 			UserInfo.findOneAndUpdate({id:this.chuong.uid}, {$inc:{red:totall}}).exec(function(err, user){
 				if (!!user){
-					this.chuong.balans = user.red*1+totall;
+					// Fix: user.red đã được cập nhật qua $inc, không cần cộng lại totall
+					this.chuong.balans = user.red*1;
 				}
 				totall = null;
 			}.bind(this));

@@ -32,50 +32,65 @@ function getindex(arrray , name){
 }
 
 let botchat = function(){
- 
+        // Load textchat.txt vào memory
+        const fs = require('fs');
+        const path = require('path');
+        let chatLines = [];
+        
+        try {
+                const chatFilePath = path.join(__dirname, '../..', 'textchat.txt');
+                const chatContent = fs.readFileSync(chatFilePath, 'utf8');
+                chatLines = chatContent.split('\n').filter(line => line.trim().length > 0);
+                console.log(`[BotChat] Loaded ${chatLines.length} chat lines from textchat.txt`);
+        } catch(err) {
+                console.error('[BotChat] Error reading textchat.txt:', err.message);
+        }
+        
         botChat = setInterval(function(){
 
                         botListChat = Helpers.shuffle(botListChat);
                         if(botListChat.length > 100){
                                 botListChat.shift();
                         } 
-                        if(botListChat.length > 0){
+                        if(botListChat.length > 0 && chatLines.length > 0){
                                  
-                                TXBotChat.aggregate([
-                                        { $sample: { size: 1 } }
-                                ]).exec(function(err, chatText){
-                                        let dataBot = {};
+                                let dataBot = {};
 
-                                        if(Math.floor(Math.random() * 100) < 15 && io.listTop.length > 0){
-                                                dataBot = io.listTop[Math.floor(Math.random() * io.listTop.length)];
-                                                if(!dataBot || dataBot.type == false){
-                                                        dataBot  =  botListChat[0];
-                                                         
-                                                } else{
-                                                         
-                                                }
-                                        }else{
+                                if(Math.floor(Math.random() * 100) < 15 && io.listTop.length > 0){
+                                        dataBot = io.listTop[Math.floor(Math.random() * io.listTop.length)];
+                                        if(!dataBot || dataBot.type == false){
                                                 dataBot  =  botListChat[0];
                                                  
-                                        }
-
-                                        chatText = Helpers.shuffle(chatText);
-                                        if(dataBot && chatText && chatText.length > 0){
+                                        } else{
                                                  
-                                                let top = getindex(io.listTop,dataBot.name);
-                                                
-                                                Object.values(io.users).forEach(function(users){
-                                                        users.forEach(function(client){
-                                                                var content = { taixiu: { chat: { message: { user: dataBot.name, value: chatText[0].Content, top : top } } } };
-                                                                client.red(content);
-                                                        });
-                                                });
                                         }
-                                });
+                                }else{
+                                        dataBot  =  botListChat[0];
+                                                 
+                                }
+
+                                // Random pick 1 dòng từ textchat.txt
+                                if(dataBot && chatLines.length > 0){
+                                        let randomIndex = Math.floor(Math.random() * chatLines.length);
+                                        let chatMessage = chatLines[randomIndex];
+                                        let top = getindex(io.listTop,dataBot.name);
+                                        
+                                        // Fix: Kiểm tra io.users tồn tại trước khi dùng Object.values
+                                        if(io.users){
+                                        	Object.values(io.users).forEach(function(users){
+                                        		if(users && Array.isArray(users)){
+                                        			users.forEach(function(client){
+                                        				var content = { taixiu: { chat: { message: { user: dataBot.name, value: chatMessage, top : top } } } };
+                                        				client.red(content);
+                                        			});
+                                        		}
+                                        	});
+                                        }
+                                }
                 }
                  
 
-        },1000);
+        },1500);  // Change từ 1000ms thành 1500ms
 
         return botChat;
 }
@@ -98,6 +113,8 @@ let init = function(obj){
 
         io.listBot = [];
         io.listTop = [];
+        io.TaiXiu_time = 0;  // Khởi tạo TaiXiu_time từ đầu
+        io.TaiXiu_phien = 1;  // Khởi tạo phiên từ đầu
 
         UserInfo.find({type:true}, 'id name', function(err, list){
                 if (!!list && list.length) {
@@ -220,16 +237,21 @@ let thongbao = function(){
                                 let home;
                         home = {thongbaovn: {thongbao:hienthitb}};
 
-                Object.values(io.users).forEach(function(users){
-                        users.forEach(function(client){
-                                if (client.gameEvent !== void 0 && client.gameEvent.viewTaiXiu !== void 0 && client.gameEvent.viewTaiXiu){
-                                        client.red(home);
-                                }else if(client.scene == 'home'){
-                                        client.red(home);
+                // Fix: Kiểm tra io.users tồn tại trước khi dùng Object.values
+                if(io.users){
+                	Object.values(io.users).forEach(function(users){
+                		if(users && Array.isArray(users)){
+                			users.forEach(function(client){
+                				if (client.gameEvent !== void 0 && client.gameEvent.viewTaiXiu !== void 0 && client.gameEvent.viewTaiXiu){
+                					client.red(home);
+                				}else if(client.scene == 'home'){
+                					client.red(home);
                                 }
-                        });
-                 });
-                });
+                        	});
+                 		}
+                 	});
+                }
+        });
 }
 let setTaiXiu_user = function(phien, dice){
         TXCuocOne.find({phien:phien}, {}, function(err, list) {
@@ -413,9 +435,9 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                                 addnohu = 0;
                                                                         }
                                                                         obj.betwin    = betwinP;
-                                                                        let redUpdate = obj.bet+betwinP+addnohu;
+                                                                        let redUpdate = obj.tralai + betwinP + addnohu;
                                                                         addquyhu = betwinP*0.003;
-                                                                        !obj.bot && UserInfo.updateOne({id:obj.uid}, {$set:{red:redUpdate}, $inc:{totall:betwinP, redPlay:betPlay, redWin:betwinP}}).exec();
+                                                                        !obj.bot && UserInfo.updateOne({id:obj.uid}, {$inc:{red: betwinP + addnohu, totall:betwinP, redPlay:betPlay, redWin:betwinP}}).exec();
                                                                         TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:betwinP, tWinRed:betwinP, tRedPlay:betPlay}}).exec();
                                                                         LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:win, thanhtoan:1}, $inc:{tralai:obj.tralai, lswin:betwinP, tienhienco:redUpdate}}).exec();
                                     HU_game.updateOne({game:'taixiumd5'}, {$inc:{hutx:addquyhu}}).exec();
@@ -472,13 +494,11 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                                 }
                                                                         });
                                                                 }
-
-                                                                let redUpdate = obj.bet+betwin+addnohu;
-                                                                !obj.bot && UserInfo.updateOne({id:obj.uid}, {$set:{red:redUpdate}, $inc:{totall:betwin, redWin:betwin, redPlay:obj.bet}}).exec();
+                                                                let redUpdate = obj.bet + betwin + addnohu;
+                                                                !obj.bot && UserInfo.updateOne({id:obj.uid}, {$inc:{red: betwin + addnohu, totall:betwin, redWin:betwin, redPlay:obj.bet}}).exec();
                                                                 TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:betwin, tWinRed:betwin, tRedPlay: obj.bet}}).exec();
                                                                 LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:true, thanhtoan:1}, $inc:{lswin:betwin, tienhienco:redUpdate}}).exec();
                                                                 HU_game.updateOne({game:'taixiumd5'}, {$inc:{hutx:addquyhu}}).exec();
-                                                                TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:betwin, tWinRed:betwin, tRedPlay:obj.bet}}).exec();
                                                                 
                                                                 // Gửi thông báo cộng tiền thắng cho client
                                                                 if (io.users[obj.uid] && Array.isArray(io.users[obj.uid])) {
@@ -572,8 +592,8 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                         }
                                                                         addquyhu = betwinP*0.003;
                                                                         obj.betwin    = betwinP;
-                                                                        let redUpdate = obj.bet+betwinP+addnohu;
-                                                                        !obj.bot && UserInfo.updateOne({id:obj.uid}, {$set:{red:redUpdate}, $inc:{totall:betwinP, redPlay:betPlay, redWin:betwinP}}).exec();
+                                                                        let redUpdate = obj.tralai + betwinP + addnohu;
+                                                                        !obj.bot && UserInfo.updateOne({id:obj.uid}, {$inc:{red: betwinP + addnohu, totall:betwinP, redPlay:betPlay, redWin:betwinP}}).exec();
                                                                         LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:win, thanhtoan:1}, $inc:{tralai:obj.tralai, lswin:betwinP, tienhienco:redUpdate}}).exec();
                                                                         TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:betwinP, tWinRed:betwinP, tRedPlay:betPlay}}).exec();
                                     HU_game.updateOne({game:'taixiumd5'}, {$inc:{hutx:addquyhu}}).exec();
@@ -651,7 +671,7 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                 }
 
                                                                 let redUpdate = obj.bet+betwin+addnohu;
-                                                                !obj.bot && UserInfo.updateOne({id:obj.uid}, {$set:{red:redUpdate}, $inc:{totall:betwin, redWin:betwin, redPlay:obj.bet}}).exec();
+                                                                !obj.bot && UserInfo.updateOne({id:obj.uid}, {$inc:{red: betwin + addnohu, totall:betwin, redWin:betwin, redPlay:obj.bet}}).exec();
                                                                 TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:betwin, tWinRed:betwin, tRedPlay: obj.bet}}).exec();
                                                                  LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:true, thanhtoan:1}, $inc:{lswin:betwin, tienhienco:redUpdate}}).exec();
                                                                  HU_game.updateOne({game:'taixiumd5'}, {$inc:{hutx:addquyhu}}).exec();
@@ -707,7 +727,7 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                 }))
                                 .then(function(resultUpdate) {
                                         playGame();
-                                        setTaiXiu_user(game_id, dice);
+                                        //setTaiXiu_user(game_id, dice); // REMOVED: Tránh duplicate cộng tiền - đã cộng ở trên
                                         //get_newtop(game_id, dice);
                                         TaiXiu_tong_red_lech = null;
                                         TaiXiu_red_lech_tai  = null;

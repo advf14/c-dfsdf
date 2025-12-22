@@ -138,15 +138,18 @@ module.exports = async function(client, data) {
                     return client.red({notice:{title:'LỖI', text:'Số tiền không hợp lệ'}});
                 }
                 
-                // Cộng dồn số tiền
-                user.red = (parseInt(user.red) || 0) + parseInt(amount);
-                await user.save();
+                // Fix: Sử dụng atomic $inc operation để tránh race condition
+                const updatedUser = await UserInfo.findByIdAndUpdate(
+                    user._id,
+                    {$inc: {red: parseInt(amount)}},
+                    {new: true}
+                ).exec();
                 
                 // Cập nhật số dư cho tất cả các phiên đăng nhập
                 if (client.redT?.users?.[userId]) {
                     for (const socket of client.redT.users[userId]) {
                         if (socket?.red) {
-                            socket.red({user: {red: user.red}});
+                            socket.red({user: {red: updatedUser.red}});
                         }
                     }
                 }

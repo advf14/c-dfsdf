@@ -16,6 +16,7 @@ let gameLoop = null;
 let init = function init(obj){
 	io = obj;
 	io.BauCua_phien = 1;
+	io.BauCua_time = 0;  // Khởi tạo BauCua_time từ đầu
 	io.baucua = {ingame:[]};
 	io.baucua.info = {
 		redBau:0,
@@ -145,34 +146,36 @@ let thongtin_thanhtoan = function thongtin_thanhtoan(dice = null){
 					tongwin = TongThang-tongDat;
 					cuoc.save();
 					update['totall']     = totall;
-					updateGame['totall'] = totall;					
-					if (TongThang > 0) {
-						update['red'] = TongThang;
-						//LScuoc.updateOne({uid:cuoc.uid, phien:phien}, {$set:{betwin:tongwin}, $inc:{tienhienco:cuoc.betwin}}).exec();
-					}
-					if (totall > 0) {
-						update['redWin'] = updateGame['win'] = totall;
-					}
-					if (totall < 0) {
-						update['redLost'] = updateGame['lost'] = totall*-1;
-					}
-					update['redPlay'] = updateGame['bet'] = tongDat;
-					BauCua_cuoc.updateOne({uid:cuoc.uid, dichvu:'Bầu Cua', phien:phien}, {$set:{lswin:tongwin}, $inc:{tienhienco:cuoc.betwin}}).exec();
-					BauCua_user.updateOne({uid:cuoc.uid, dichvu:'Bầu Cua'}, {$inc:updateGame}).exec();
-					!cuoc.bot && (UserInfo.updateOne({id:cuoc.uid}, {$inc:update}).exec());
+				updateGame['totall'] = totall;
+				
+				// Fix: chỉ cộng tiền lãi (TongThang - tongDat), không SET lại toàn bộ
+				let loinhuuan = TongThang - tongDat;
+				if (loinhuuan > 0) {
+					update['red'] = loinhuuan;      // Cộng tiền lãi
+					update['redWin'] = updateGame['win'] = loinhuuan;
+				} else if (loinhuuan < 0) {
+					update['red'] = loinhuuan;      // Âm = trừ tiền
+					update['redLost'] = updateGame['lost'] = Math.abs(loinhuuan);
+				}
+				update['redPlay'] = updateGame['bet'] = tongDat;
+				
+				BauCua_cuoc.updateOne({uid:cuoc.uid, dichvu:'Bầu Cua', phien:phien}, {$set:{lswin:tongwin}, $inc:{tienhienco:cuoc.betwin}}).exec();
+				BauCua_user.updateOne({uid:cuoc.uid, dichvu:'Bầu Cua'}, {$inc:updateGame}).exec();
+				!cuoc.bot && (UserInfo.updateOne({id:cuoc.uid}, {$inc:update}).exec());
 
-					if(void 0 !== io.users[cuoc.uid]){
-						let status = {};
-						if (TongThang > 0) {
-							status = {mini:{baucua:{status:{win:true, bet:TongThang}}}};
-						}else{
-							status = {mini:{baucua:{status:{win:false, bet:Math.abs(totall)}}}};
-						}
-						io.users[cuoc.uid].forEach(function(client){
-							client.red(status);
-						});
-						status = null;
+				// Fix: Kiểm tra io.users[uid] tồn tại và là array trước khi dùng forEach
+				if(io.users[cuoc.uid] && Array.isArray(io.users[cuoc.uid])){
+					let status = {};
+					if (TongThang > tongDat) {
+						status = {mini:{baucua:{status:{win:true, amount: loinhuuan, total: TongThang, bet: tongDat}}}};
+					}else{
+						status = {mini:{baucua:{status:{win:false, amount: Math.abs(loinhuuan), total: TongThang, bet: tongDat}}}};
 					}
+					io.users[cuoc.uid].forEach(function(client){
+						client.red(status);
+					});
+					status = null;
+				}
 					TongThang  = null;
 					huou       = null;
 					bau        = null;
@@ -227,13 +230,18 @@ let thongtin_thanhtoan = function thongtin_thanhtoan(dice = null){
 		});
 
 		let admin_data = {baucua:{info:io.baucua.infoAdmin, ingame:io.baucua.ingame}};
-		Object.values(io.admins).forEach(function(admin){
-			admin.forEach(function(client){
-				if (client.gameEvent !== void 0 && client.gameEvent.viewBauCua !== void 0 && client.gameEvent.viewBauCua){
-					client.red(admin_data);
+		// Fix: Kiểm tra io.admins tồn tại trước khi gọi Object.values
+		if(io.admins){
+			Object.values(io.admins).forEach(function(admin){
+				if(admin && Array.isArray(admin)){
+					admin.forEach(function(client){
+						if (client.gameEvent !== void 0 && client.gameEvent.viewBauCua !== void 0 && client.gameEvent.viewBauCua){
+							client.red(admin_data);
+						}
+					});
 				}
 			});
-		});
+		}
 	}
 }
 

@@ -109,13 +109,30 @@ XocXoc.prototype.capNhatSoDuNguoiChoi = async function(uid, update, tongThang, t
             throw new Error(`Không tìm thấy người chơi ${uid}`);
         }
 
-        // Cập nhật số dư
+        // Fix: Sử dụng findByIdAndUpdate với $inc để tránh race condition
+        const updateObj = {};
         if (update.red) {
-            user.red = (user.red || 0) + update.red;
+            updateObj.$inc = updateObj.$inc || {};
+            updateObj.$inc.red = update.red;
+        }
+        if (update.totall) {
+            updateObj.$inc = updateObj.$inc || {};
+            updateObj.$inc.totall = update.totall;
+        }
+        if (update.redPlay) {
+            updateObj.$inc = updateObj.$inc || {};
+            updateObj.$inc.redPlay = update.redPlay;
+        }
+        if (update.redWin) {
+            updateObj.$inc = updateObj.$inc || {};
+            updateObj.$inc.redWin = update.redWin;
+        }
+        if (update.redLost) {
+            updateObj.$inc = updateObj.$inc || {};
+            updateObj.$inc.redLost = update.redLost;
         }
 
-        // Lưu thay đổi
-        await user.save({ session });
+        await UserInfo.findByIdAndUpdate(user._id, updateObj, {session}).exec();
         await session.commitTransaction();
         
         console.log(`Đã cập nhật số dư cho ${uid}: +${update.red || 0} (Tổng: ${user.red})`);
