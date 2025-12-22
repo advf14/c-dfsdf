@@ -96,6 +96,10 @@ let botchat = function(){
 }
 let GetTop = function(){
         TaiXiu_User.find({'totall':{$gt:0}}, 'totall uid', {sort:{totall:-1}, limit:10}, function(err, results) {
+                if (err || !results || results.length === 0) {
+                        io.listTop = [];
+                        return;
+                }
                 Promise.all(results.map(function(obj){
                         return new Promise(function(resolve, reject) {
                                 UserInfo.findOne({'id': obj.uid}, function(error, result2){
