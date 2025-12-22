@@ -216,6 +216,9 @@ var cuoc = function(client, data){
 									var taixiuVery = (red ? (select ? (taixiu ? {red_me_tai:isCuoc.bet*1+bet} : {red_me_chan:isCuoc.bet*1+bet}) :(taixiu ? {red_me_xiu:isCuoc.bet*1+bet} : {red_me_le:isCuoc.bet*1+bet})) :(select ? (taixiu ? {xu_me_tai:isCuoc.bet*1+bet} : {xu_me_chan:isCuoc.bet*1+bet}) :(taixiu ? {xu_me_xiu:isCuoc.bet*1+bet} : {xu_me_le:isCuoc.bet*1+bet})));
 									taixiuVery = (taixiu ? {taixiu:taixiuVery} : {chanle:taixiuVery});
 
+									// Gửi ngay cho chính user này
+									client.red({taixiu:taixiuVery, user:red ? {red:user.red-bet} : {xu:user.xu-bet}});
+
 									if (!!client.redT.users[client.UID]) {
 										Promise.all(client.redT.users[client.UID].map(function(obj){
 											obj.red({taixiu:taixiuVery, user:red ? {red:user.red-bet} : {xu:user.xu-bet}});

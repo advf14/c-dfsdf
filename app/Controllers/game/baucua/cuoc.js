@@ -16,22 +16,27 @@ module.exports = function(client, data){
 			client.red({mini:{baucua:{notice: 'Cược thất bại...'}}});
 		}else{
 			UserInfo.findOne({id: client.UID}, 'red', function(err, user){
-				if (!user || user.red < cuoc) {
+				if (err || !user || user.red < cuoc) {
 					client.red({mini:{baucua:{notice: 'Bạn không đủ số dư'}}});
 				}else{
 					user.red -= cuoc;
-					user.save();
-					var dataRed = [
-						'meRedHuou',
-						'meRedBau',
-						'meRedGa',
-						'meRedCa',
-						'meRedCua',
-						'meRedTom',
-					]
-					var data = {};
-					BauCua_cuoc.findOne({uid:client.UID, phien:client.redT.BauCua_phien}, function(err, checkOne) {
-						var io = client.redT;
+					user.save(function(saveErr) {
+						if (saveErr) {
+							client.red({mini:{baucua:{notice: 'Cập nhật tài khoản thất bại'}}});
+							return;
+						}
+						var dataRed = [
+							'meRedHuou',
+							'meRedBau',
+							'meRedGa',
+							'meRedCa',
+							'meRedCua',
+							'meRedTom',
+						]
+						var data = {};
+						BauCua_cuoc.findOne({uid:client.UID, phien:client.redT.BauCua_phien}, function(err, checkOne) {
+							if (err) return;
+							var io = client.redT;
 							if (linhVat == 0) {
 								io.baucua.info.redHuou += cuoc;
 								io.baucua.infoAdmin.redHuou += cuoc;
@@ -57,14 +62,17 @@ module.exports = function(client, data){
 							update[linhVat] = cuoc;
 							
 							BauCua_cuoc.findOneAndUpdate({uid:client.UID, dichvu:'Bầu Cua', phien:client.redT.BauCua_phien}, {$inc:update}, function (err, cat){
+								if (err || !cat) return;
 								dataRed.forEach(function(o, i){
 									data[o] = cat[i] + (i == linhVat ? cuoc : 0);
 									return (data[o] = cat[i] + (i == linhVat ? cuoc : 0));
 								});
 								let dataT = {mini:{baucua:{data:data}}, user:{red:user.red}};
-								client.redT.users[client.UID].forEach(function(obj){
-									obj.red(dataT);
-								});
+								if (client.redT.users[client.UID]) {
+									client.redT.users[client.UID].forEach(function(obj){
+										obj.red(dataT);
+									});
+								}
 							});
 							io.baucua.ingame.forEach(function(uOld){
 								if (uOld.uid == client.UID) {
@@ -86,6 +94,7 @@ module.exports = function(client, data){
 							io.baucua.ingame.unshift(addList);
 						}
 					});
+					}); // Close user.save callback
 
 					let vipStatus = getConfig('topVip');
 					if (!!vipStatus && vipStatus.status === true) {
