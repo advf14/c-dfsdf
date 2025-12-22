@@ -101,10 +101,10 @@ var chat = function(client, str){
 							let top = getindex(client.redT.listTop,client.profile.name);
 					
 					Object.values(client.redT.users).forEach(function(users){
-						users.forEach(function(client){
-							client.red({taixiu:{chat:{message:{user: tentk, value: str, top : top}}}});
-							//var content = { taixiu: { chat: { message: { user: client.profile.name, value: str, top : top } } } };
-							//client.red(content);
+						users.forEach(function(clientSocket){
+							clientSocket.red({taixiu:{chat:{message:{user: tentk, value: str, top : top}}}});
+							//var content = { taixiu: { chat: { message: { user: clientSocket.profile.name, value: str, top : top } } } };
+							//clientSocket.red(content);
 						});
 					});
 						}

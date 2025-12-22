@@ -494,37 +494,44 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                                 }
                                                                         });
                                                                 }
-                                                                let redUpdate = obj.bet + betwin + addnohu;
-                                                                !obj.bot && UserInfo.updateOne({id:obj.uid}, {$inc:{red: betwin + addnohu, totall:betwin, redWin:betwin, redPlay:obj.bet}}).exec();
-                                                                TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:betwin, tWinRed:betwin, tRedPlay: obj.bet}}).exec();
-                                                                LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:true, thanhtoan:1}, $inc:{lswin:betwin, tienhienco:redUpdate}}).exec();
-                                                                HU_game.updateOne({game:'taixiumd5'}, {$inc:{hutx:addquyhu}}).exec();
                                                                 
-                                                                // Gửi thông báo cộng tiền thắng cho client
-                                                                if (io.users[obj.uid] && Array.isArray(io.users[obj.uid])) {
-                                                                    io.users[obj.uid].forEach(function(client) {
-                                                                        if (client && typeof client.red === 'function') {
-                                                                            client.red({
-                                                                                user: {red: redUpdate},
-                                                                                taixiu: {
-                                                                                    win: {
-                                                                                        amount: betwin,
-                                                                                        bonus: addnohu,
-                                                                                        total: redUpdate,
-                                                                                        phien: game_id
-                                                                                    },
-                                                                                    animation: {
-                                                                                        type: 'floatingMoney',
-                                                                                        amount: betwin,
-                                                                                        duration: 2000,
-                                                                                        initialBet: obj.bet,
-                                                                                        multiplier: 1.98
-                                                                                    }
+                                                                // Update tiền với {new: true} để lấy balance sau khi cộng
+                                                                if (!obj.bot) {
+                                                                    UserInfo.findByIdAndUpdate(obj.uid, {$inc:{red: betwin + addnohu, totall:betwin, redWin:betwin, redPlay:obj.bet}}, {new: true}).lean().exec(function(err, updatedUser) {
+                                                                        if (updatedUser && io.users[obj.uid]) {
+                                                                            // Gửi balance thực tế từ DB
+                                                                            io.users[obj.uid].forEach(function(client) {
+                                                                                if (client && typeof client.red === 'function') {
+                                                                                    client.red({
+                                                                                        user: {red: updatedUser.red},
+                                                                                        taixiu: {
+                                                                                            win: {
+                                                                                                amount: betwin,
+                                                                                                bonus: addnohu,
+                                                                                                total: updatedUser.red,
+                                                                                                phien: game_id
+                                                                                            },
+                                                                                            animation: {
+                                                                                                type: 'floatingMoney',
+                                                                                                amount: betwin,
+                                                                                                duration: 2000,
+                                                                                                initialBet: obj.bet,
+                                                                                                multiplier: 1.98
+                                                                                            }
+                                                                                        }
+                                                                                    });
                                                                                 }
                                                                             });
                                                                         }
                                                                     });
+                                                                } else {
+                                                                    // For bots, just update without waiting for response
+                                                                    UserInfo.findByIdAndUpdate(obj.uid, {$inc:{red: betwin + addnohu, totall:betwin, redWin:betwin, redPlay:obj.bet}}).exec();
                                                                 }
+                                                                
+                                                                TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:betwin, tWinRed:betwin, tRedPlay: obj.bet}}).exec();
+                                                                LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:true, thanhtoan:1}, $inc:{lswin:betwin}}).exec();
+                                                                HU_game.updateOne({game:'taixiumd5'}, {$inc:{hutx:addquyhu}}).exec();
                                                                 
                                                                 return TXCuocOne.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:true}, $inc:{betwin:betwin}}).exec();
                                                         }else{
@@ -532,31 +539,37 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                 obj.save();
                                                                 Helpers.MissionAddCurrent(obj.uid, (obj.bet*0.02>>0));
 
-                                                                !obj.bot && UserInfo.updateOne({id:obj.uid}, {$inc:{totall:-obj.bet, redLost:obj.bet, redPlay:obj.bet}}).exec();
-                                                                 LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{thanhtoan:1},$inc:{lswin:-obj.bet}}).exec();
-                                                                TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:-obj.bet, tLostRed:obj.bet, tRedPlay:obj.bet}}).exec();
-                                                                
-                                                                // Gửi thông báo thua cược cho client
-                                                                if (io.users[obj.uid] && Array.isArray(io.users[obj.uid])) {
-                                                                    io.users[obj.uid].forEach(function(client) {
-                                                                        if (client && typeof client.red === 'function') {
-                                                                            client.red({
-                                                                                taixiu: {
-                                                                                    lose: {
-                                                                                        amount: obj.bet,
-                                                                                        phien: game_id
-                                                                                    },
-                                                                                    animation: {
-                                                                                        type: 'floatingMoneyLose',
-                                                                                        amount: obj.bet,
-                                                                                        duration: 2000,
-                                                                                        status: 'lose'
-                                                                                    }
+                                                                // Update tiền loss và gửi balance thực tế
+                                                                if (!obj.bot) {
+                                                                    UserInfo.findByIdAndUpdate(obj.uid, {$inc:{totall:-obj.bet, redLost:obj.bet, redPlay:obj.bet}}, {new: true}).lean().exec(function(err, updatedUser) {
+                                                                        if (updatedUser && io.users[obj.uid]) {
+                                                                            io.users[obj.uid].forEach(function(client) {
+                                                                                if (client && typeof client.red === 'function') {
+                                                                                    client.red({
+                                                                                        user: {red: updatedUser.red},
+                                                                                        taixiu: {
+                                                                                            lose: {
+                                                                                                amount: obj.bet,
+                                                                                                phien: game_id
+                                                                                            },
+                                                                                            animation: {
+                                                                                                type: 'floatingMoneyLose',
+                                                                                                amount: obj.bet,
+                                                                                                duration: 2000,
+                                                                                                status: 'lose'
+                                                                                            }
+                                                                                        }
+                                                                                    });
                                                                                 }
                                                                             });
                                                                         }
                                                                     });
+                                                                } else {
+                                                                    UserInfo.findByIdAndUpdate(obj.uid, {$inc:{totall:-obj.bet, redLost:obj.bet, redPlay:obj.bet}}).exec();
                                                                 }
+                                                                
+                                                                LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{thanhtoan:1},$inc:{lswin:-obj.bet}}).exec();
+                                                                TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:-obj.bet, tLostRed:obj.bet, tRedPlay:obj.bet}}).exec();
                                                         }
                                                 }
                                         } else if (obj.select === false) { // Tổng Red Xỉu
@@ -984,6 +997,21 @@ let playGame = function(){
                                         },
                                         list: []
                                 };
+                                
+                                // BROADCAST NEW GAME STATE TO ALL PLAYERS
+                                io.sendAllUser({taixiu: io.taixiu});
+                                if(io.admins && Object.values(io.admins).length > 0) {
+                                        Object.values(io.admins).forEach(function(admin){
+                                                if(admin && Array.isArray(admin)){
+                                                        admin.forEach(function(client){
+                                                                if(client && typeof client.red === 'function'){
+                                                                        client.red({taixiu: io.taixiuAdmin});
+                                                                }
+                                                        });
+                                                }
+                                        });
+                                }
+                                
                                 GetTop();
                                 let taixiucf = Helpers.getConfig('taixiu');
                                 if (!!taixiucf && taixiucf.bot && !!io.listBot && io.listBot.length > 0) {
