@@ -3,6 +3,8 @@ let first  = require('./Controllers/User.js').first;
 let onPost = require('./Controllers/onPost.js');
 
 let auth = function(client) {
+	// Fix: Assign redT trước khi gọi first để tránh null reference
+	client.redT = global.redT || process.redT;
 	client.gameEvent = {};
 	client.scene = 'home';
 	first(client);

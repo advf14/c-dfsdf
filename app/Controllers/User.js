@@ -306,12 +306,18 @@ let getLevel = function(client){
 }
 
 function addToListOnline(client){
-	if (void 0 !== client.redT) {
+	// Fix: Check client.redT và client.redT.users tồn tại trước khi access
+	if (client && client.redT && client.redT.users && typeof client.UID !== 'undefined') {
 		if (void 0 !== client.redT.users[client.UID]) {
 			client.redT.users[client.UID].push(client);
 		}else{
 			client.redT.users[client.UID] = [client];
 		}
+	} else if (client) {
+		// Nếu redT chưa sẵn sàng, retry sau 500ms
+		setTimeout(function() {
+			addToListOnline(client);
+		}, 500);
 	}
 }
 function signOut(client){

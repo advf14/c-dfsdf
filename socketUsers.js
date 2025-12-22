@@ -151,6 +151,7 @@ module.exports = function(ws, redT){
 					authenticate(this, message.authentication, function(err, success){
 						if (success) {
 							this.auth = true;
+							// Fix: Assign redT TRƯỚC khi gọi socket.auth để tránh null reference
 							this.redT = redT;
 							socket.auth(this);
 							redT = null;

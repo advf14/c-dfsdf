@@ -512,6 +512,13 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                                         bonus: addnohu,
                                                                                         total: redUpdate,
                                                                                         phien: game_id
+                                                                                    },
+                                                                                    animation: {
+                                                                                        type: 'floatingMoney',
+                                                                                        amount: betwin,
+                                                                                        duration: 2000,
+                                                                                        initialBet: obj.bet,
+                                                                                        multiplier: 1.98
                                                                                     }
                                                                                 }
                                                                             });
@@ -538,6 +545,12 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                                     lose: {
                                                                                         amount: obj.bet,
                                                                                         phien: game_id
+                                                                                    },
+                                                                                    animation: {
+                                                                                        type: 'floatingMoneyLose',
+                                                                                        amount: obj.bet,
+                                                                                        duration: 2000,
+                                                                                        status: 'lose'
                                                                                     }
                                                                                 }
                                                                             });
