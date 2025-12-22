@@ -63,7 +63,12 @@ let thongtin_thanhtoan = function thongtin_thanhtoan(dice = null){
 		}
 		let phien = io.BauCua_phien-1;
 		BauCua_temp.updateOne({}, {$inc:updateLog}).exec();
-		BauCua_cuoc.find({phien:phien, dichvu:'Bầu Cua'}, {}, function(err, list) {
+		BauCua_cuoc.find({phien:phien, dichvu:'Bầu Cua'}, {}).lean().exec(function(err, list) {
+			// Fix: Check if list exists and is an array
+			if (err || !list || !Array.isArray(list) || list.length === 0) {
+				return;
+			}
+			
 			if (list.length) {
 				Promise.all(list.map(function(cuoc){
 					let TongThua  = 0; // Số tiền thua

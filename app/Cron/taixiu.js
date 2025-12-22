@@ -176,10 +176,15 @@ let truChietKhau = function(bet, phe){
 }
 
 let TopHu = function(){
-        HU_game.find({}, 'game type hutx red bet toX balans x').exec(function(err, data){
+        HU_game.find({}, 'game type hutx red bet toX balans x').lean().exec(function(err, data){
+                // Fix: Check if data exists and is an array before accessing length
+                if (err || !data || !Array.isArray(data) || data.length === 0) {
+                        return;
+                }
+                
                 if (data.length) {
                         let result = data.map(function(obj){
-                                obj = obj._doc;
+                                // data is already plain object from .lean()
                                 delete obj._id;
                                 return obj;
                         });
@@ -812,6 +817,7 @@ let playGame = function(){
                         thongbao();
         
                         HU_game.findOne({game:'taixiumd5', type:1}, 'hutx', function(err, datahu){
+                                if (err || !datahu) return;
                                 var tienhu = datahu.hutx;
                                 let home;
                                 home = {hutxmain: {monney:tienhu}};
@@ -828,6 +834,7 @@ let playGame = function(){
         
                 }
                 HU_game.findOne({game:'taixiumd5', type:1}, 'hutx', function(err, datahu){
+                                if (err || !datahu) return;
                                 var tienhu = datahu.hutx;
                                 let home;
                         home = {taixiu: {hutx:{monney:tienhu}}};
