@@ -5,11 +5,12 @@ module.exports = {
         'useUnifiedTopology': true,
         'useCreateIndex': true,
         'useFindAndModify': false,
-        'serverSelectionTimeoutMS': 5000,
-        'socketTimeoutMS': 45000,
-        'connectTimeoutMS': 10000,
-        'maxPoolSize': 100,
-        'minPoolSize': 5,
-        'maxIdleTimeMS': 30000
+        'serverSelectionTimeoutMS': 15000,
+        'socketTimeoutMS': 60000,
+        'connectTimeoutMS': 15000,
+        'maxPoolSize': 150,
+        'minPoolSize': 10,
+        'maxIdleTimeMS': 15000,
+        'waitQueueTimeoutMS': 5000
     }
 };

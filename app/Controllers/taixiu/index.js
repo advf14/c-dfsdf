@@ -23,32 +23,25 @@ function getLogs(client){
 	var data = JSON.parse(JSON.stringify(client.redT.taixiu));
 	data.taixiu.red_me_tai = 0;
 	data.taixiu.red_me_xiu = 0;
-	var active1 = new Promise((resolve, reject) => {
-		TXPhien.find({}, {}, {sort:{'_id':-1}, limit:125}, function(err, post) {
-			Promise.all(post.map(function(obj){return {'dice':[obj.dice1,obj.dice2,obj.dice3], 'phien':obj.id}}))
-			.then(function(arrayOfResults) {
-				resolve(arrayOfResults)
-			})
-		});
-	});
-
-	var active2 = new Promise((resolve, reject) => {
-		TaiXiu_User.findOne({uid:client.UID}, 'tLineWinRed tLineLostRed tLineWinRedH tLineLostRedH', function(err, data_a2) {
-			if (err || !data_a2) {
-				// Return default values if user not found or error
-				resolve({
+	
+	// Use lean() + parallel exec() for faster queries
+	var active1 = TXPhien.find({}, {}, {sort:{'_id':-1}, limit:125}).lean().exec()
+		.then(post => post.map(obj => ({dice:[obj.dice1,obj.dice2,obj.dice3], phien:obj.id})));
+	
+	var active2 = TaiXiu_User.findOne({uid:client.UID}, 'tLineWinRed tLineLostRed tLineWinRedH tLineLostRedH').lean().exec()
+		.then(data_a2 => {
+			if (!data_a2) {
+				return {
 					tLineWinRed: 0,
 					tLineLostRed: 0,
 					tLineWinRedH: 0,
 					tLineLostRedH: 0
-				});
-			} else {
-				const result = data_a2._doc ? data_a2._doc : data_a2;
-				delete result._id;
-				resolve(result);
+				};
 			}
+			const result = data_a2._doc ? data_a2._doc : data_a2;
+			delete result._id;
+			return result;
 		});
-	});
 
 	client.redT.taixiuAdmin.list.forEach(function(game){
 		if (game.name == client.profile.name) {
@@ -59,6 +52,7 @@ function getLogs(client){
 			}
 		}
 	});
+	
 	Promise.all([active1, active2])
 	.then(values => {
 		data.logs   = values[0];
@@ -66,26 +60,21 @@ function getLogs(client){
 		client.red({taixiu:data});
 		data = null;
 		client = null;
+	}).catch(err => {
+		console.error('getLogs error:', err);
 	});
 }
 
 function getNew(client){
-	var active1 = new Promise((resolve, reject) => {
-		UserInfo.findOne({id:client.UID}, 'red', function(err, user){
-			if (err) return reject(err)
-			resolve(user)
-		});
-	});
-	var active2 = new Promise((resolve, reject) => {
-		TaiXiu_User.findOne({uid:client.UID}, 'tLineWinRed tLineLostRed tLineWinRedH tLineLostRedH', function(err, data) {
-			if (err) return reject(err)
-			resolve(data)
-		});
-	});
+	// Parallel exec() is faster than Promise wrapper
+	var active1 = UserInfo.findOne({id:client.UID}, 'red').lean().exec();
+	var active2 = TaiXiu_User.findOne({uid:client.UID}, 'tLineWinRed tLineLostRed tLineWinRedH tLineLostRedH').lean().exec();
 
 	Promise.all([active1, active2]).then(values => {
 		client.red({user:values[0], taixiu:{du_day:values[1]}});
 		client = null;
+	}).catch(err => {
+		console.error('getNew error:', err);
 	});
 }
 
@@ -131,124 +120,134 @@ var chat = function(client, str){
 
 
 var cuoc = function(client, data){
-	if (!!data && !!data.bet) {
+	if (!data || !data.bet) return;
+		
+	if (client.redT.TaiXiu_time < 3 || client.redT.TaiXiu_time > 64) {
+		client.red({taixiu:{err:'Phiên mới chưa bắt đầu !'}});
+		return;
+	}
+	
+	let bet    = data.bet >> 0;
+	let select = !!data.select;
+	
+	if (bet < 1000) {
+		client.red({taixiu:{err:'Số tiền cược thấp nhất 1k !'}});
+	} else if (bet > 999999999) {
+		client.red({taixiu:{err:'Số tiền cược tối đa 999.999.999k !!'}});
+	} else if (bet < 0) {
+		client.red({taixiu:{err:'Cảnh báo TK sắp bị khóa vĩnh viễn !!'}});
+	} else {
+		let phien = client.redT.TaiXiu_phien;
+		
+		// Parallel queries for speed
+		UserInfo.findOne({id:client.UID}, 'red name').lean().exec((err, user) => {
+			if (err || !user || user.red < bet) {
+				client.red({taixiu:{err:'Bạn không đủ số dư !'}});
+				return;
+			}
 			
-		if (client.redT.TaiXiu_time < 3 || client.redT.TaiXiu_time > 64) { // đang 60s mà em chua tính trả thưởng
-			client.red({taixiu:{err:'Phiên mới chưa bắt đầu !'}});
-		}else{
-			let bet    = data.bet>>0;   // Số tiền
-			let select = !!data.select; // Cửa đặt (Tài:1, Xỉu:0)
-			if (bet < 1000){
-				client.red({taixiu:{err:'Số tiền cược thấp nhất 1k !'}});
-			}else if (bet > 999999999){
-				client.red({taixiu:{err:'Số tiền cược tối đa 999.999.999k !!'}});
-			}else if (bet < 0){
-				client.red({taixiu:{err:'Cảnh báo TK sắp bị khóa vĩnh viễn !!'}});
-			}else{
-				UserInfo.findOne({id:client.UID}, 'red name', function(err, user){
-					if (user === null || user.red < bet) {
-						client.red({taixiu:{err:'Bạn không đủ số dư !'}});
-					}else{
-                     DaiLy.findOne({nickname:user.name},function(err,userDl){ if(userDl){
-                      client.red({
-                       notice: {
-                        title: 'Thông Báo',
-                        text: 'Đại lý không được chơi game',
-                        load: false
-                       }
-                      });
-                     }else{
-						 
+			// Non-blocking DaiLy check
+			DaiLy.findOne({nickname:user.name}).lean().exec((err, userDl) => {
+				if (userDl) {
+					client.red({
+						notice: {
+							title: 'Thông Báo',
+							text: 'Đại lý không được chơi game',
+							load: false
+						}
+					});
+					return;
+				}
+				
+				TXCuocOne.findOne({uid:client.UID, phien:phien}, 'bet phien select').lean().exec((err, isCuoc) => {
+					if (isCuoc) {
+						// Update existing bet
+						if (isCuoc.select !== select) {
+							client.red({taixiu:{err:'Chỉ được cược 1 bên.!!'}});
+							return;
+						}
 						
-						let phien = client.redT.TaiXiu_phien;
-						
-						TXCuocOne.findOne({uid:client.UID, phien:phien}, 'bet phien select', function(isCuocErr, isCuoc) {
-							if (!!isCuoc) {
-								// update
-								if (isCuoc.select !== select) {
-									client.red({taixiu:{err:'Chỉ được cược 1 bên.!!'}});
-								}else{
-									user.red -= bet;
-						            user.save();
-									client.red({taixiu:{err:'Đặt cược thành công!'}});
-									client.red({taixiu:{amthanhdatcuoc:1}});
-									isCuoc.bet = isCuoc.bet*1+bet;
-									isCuoc.save();
-									var io = client.redT;
-									if (select) {
-										io.taixiu.taixiu.red_tai      += bet;
-										io.taixiuAdmin.taixiu.red_tai += bet;
-										io.taixiu.taixiu.red_player_tai += 1;
-										io.taixiu.taixiu.phien = phien;
-									}else{
-										io.taixiu.taixiu.red_xiu      += bet;
-										io.taixiuAdmin.taixiu.red_xiu += bet;
-										io.taixiu.taixiu.red_player_xiu  += 1;
-										io.taixiu.taixiu.phien = phien;
-									}
-									io.taixiuAdmin.list.unshift({name:user.name, select:select, bet:bet, time:new Date()});
-									io = null;
-									TXCuoc.create({uid:client.UID, name:user.name, phien:phien, bet:bet, select:select, time:new Date()});
-									LScuoc.updateOne({uid:client.UID, phien:phien}, {$set:{tienhienco:user.red, dichvu:'Tài Xỉu MD5'}, $inc:{bet:bet}}).exec();
-                                    // LScuoc.updateOne({uid:client.UID, phien:phien, select:select, bet:isCuoc.bet});
-								   // LScuoc.create({uid:client.UID, name:user.name, game:'Tài Xỉu MD5', phien:phien, select:select, tiencuoc:bet, chitiet:'Đặt Cược Phiên'+phien, tienthang:'0', tienhienco:user.red, time:new Date()});
-									var taixiuVery = select ? {red_me_tai:isCuoc.bet} : {red_me_xiu:isCuoc.bet};
-									taixiuVery = {taixiu:taixiuVery};
-									if (!!client.redT.users[client.UID]) {
-										client.redT.users[client.UID].forEach(function(obj){
-											obj.red({taixiu:taixiuVery, user:{red:user.red}});
-										});
-									}
-								}
-							}else{
+						// Atomic updates - deduct money and update bet
+						UserInfo.findByIdAndUpdate(user._id, {$inc: {red: -bet}}, {new: true}).lean().exec((err, updatedUser) => {
+							if (err || !updatedUser) {
+								client.red({taixiu:{err:'Lỗi cập nhật tiền'}});
+								return;
+							}
+							
+							TXCuocOne.findByIdAndUpdate(isCuoc._id, {$inc: {bet: bet}}, {new: true}).lean().exec((err, updatedBet) => {
+								client.red({taixiu:{err:'Đặt cược thành công!'}});
+								client.red({taixiu:{amthanhdatcuoc:1}});
 								
-								// cuoc
-								user.red -= bet;
-						        user.save();
 								var io = client.redT;
 								if (select) {
-									io.taixiu.taixiu.red_tai             += bet;
-									io.taixiu.taixiu.red_player_tai      += 1;
-									io.taixiuAdmin.taixiu.red_tai        += bet;
-									io.taixiuAdmin.taixiu.red_player_tai += 1;
-								}else{
-									io.taixiu.taixiu.red_xiu             += bet;
-									io.taixiu.taixiu.red_player_xiu      += 1;
-
-									io.taixiuAdmin.taixiu.red_xiu        += bet;
-									io.taixiuAdmin.taixiu.red_player_xiu += 1;
+									io.taixiu.taixiu.red_tai      += bet;
+									io.taixiuAdmin.taixiu.red_tai += bet;
+									io.taixiu.taixiu.red_player_tai += 1;
+								} else {
+									io.taixiu.taixiu.red_xiu      += bet;
+									io.taixiuAdmin.taixiu.red_xiu += bet;
+									io.taixiu.taixiu.red_player_xiu += 1;
 								}
 								io.taixiuAdmin.list.unshift({name:user.name, select:select, bet:bet, time:new Date()});
 								io = null;
-								client.red({taixiu:{err:'Đặt cược thành công!'}});
-								client.red({taixiu:{amthanhdatcuoc:1}});
-								TXCuocOne.create({uid:client.UID, phien:phien, select:select, bet:bet});
+								
+								// Non-blocking updates
 								TXCuoc.create({uid:client.UID, name:user.name, phien:phien, bet:bet, select:select, time:new Date()});
-								LScuoc.create({uid:client.UID, phien:phien, select:select, bet:bet, thanhtoan:0, tienhienco:user.red, dichvu:'Tài Xỉu MD5', time:new Date()});
-								var taixiuVery = select ? {red_me_tai:bet} : {red_me_xiu:bet};
+								LScuoc.updateOne({uid:client.UID, phien:phien}, {$set:{tienhienco:updatedUser.red, dichvu:'Tài Xỉu MD5'}, $inc:{bet:bet}}).exec();
+								
+								var taixiuVery = select ? {red_me_tai:updatedBet.bet} : {red_me_xiu:updatedBet.bet};
 								taixiuVery = {taixiu:taixiuVery};
-
-								if (!!client.redT.users[client.UID]) {
-									client.redT.users[client.UID].forEach(function(obj){
-										obj.red({taixiu:taixiuVery, user:{red:user.red}});
+								if (client.redT.users[client.UID]) {
+									client.redT.users[client.UID].forEach(obj => {
+										obj.red({taixiu:taixiuVery, user:{red:updatedUser.red}});
 									});
 								}
-								
+							});
+						});
+					} else {
+						// Create new bet
+						UserInfo.findByIdAndUpdate(user._id, {$inc: {red: -bet}}, {new: true}).lean().exec((err, updatedUser) => {
+							if (err || !updatedUser) {
+								client.red({taixiu:{err:'Lỗi cập nhật tiền'}});
+								return;
 							}
-							bet    = null;
-							select = null;
-							phien  = null;
-							client = null;
-							user   = null;
+							
+							var io = client.redT;
+							if (select) {
+								io.taixiu.taixiu.red_tai += bet;
+								io.taixiu.taixiu.red_player_tai += 1;
+								io.taixiuAdmin.taixiu.red_tai += bet;
+								io.taixiuAdmin.taixiu.red_player_tai += 1;
+							} else {
+								io.taixiu.taixiu.red_xiu += bet;
+								io.taixiu.taixiu.red_player_xiu += 1;
+								io.taixiuAdmin.taixiu.red_xiu += bet;
+								io.taixiuAdmin.taixiu.red_player_xiu += 1;
+							}
+							io.taixiuAdmin.list.unshift({name:user.name, select:select, bet:bet, time:new Date()});
+							io = null;
+							
+							client.red({taixiu:{err:'Đặt cược thành công!'}});
+							client.red({taixiu:{amthanhdatcuoc:1}});
+							
+							// Non-blocking creates
+							TXCuocOne.create({uid:client.UID, phien:phien, select:select, bet:bet});
+							TXCuoc.create({uid:client.UID, name:user.name, phien:phien, bet:bet, select:select, time:new Date()});
+							LScuoc.create({uid:client.UID, phien:phien, select:select, bet:bet, thanhtoan:0, tienhienco:updatedUser.red, dichvu:'Tài Xỉu MD5', time:new Date()});
+							
+							var taixiuVery = select ? {red_me_tai:bet} : {red_me_xiu:bet};
+							taixiuVery = {taixiu:taixiuVery};
+							if (client.redT.users[client.UID]) {
+								client.redT.users[client.UID].forEach(obj => {
+									obj.red({taixiu:taixiuVery, user:{red:updatedUser.red}});
+								});
+							}
 						});
 					}
-					 });
-					
-					}
 				});
-			}
-		}
-			}
+			});
+		});
+	}
 }	
 var getuser_play = function(client, data){
 	if (!!data && !!data.phien) {
