@@ -94,38 +94,35 @@ var chat = function(client, str){
 	Chat = setInterval(function(){
 	if (!!str) {
 		UserInfo.findOne({id:client.UID}, 'red name', function(err, user){
-			var tentk = user.name;
-           if (!user || user.red < 10000) {
-			
+			// Fix: Check user tồn tại TRƯỚC khi access user.name
+			if (!user || user.red < 10000) {
 				//client.red({taixiu:{err:'Tài khoản phải có ít nhất 10.000 Gold để chat.!!'}});
-				client.red({taixiu:{chat:{message:{user:'***Số dư không đủ để chát***', value:'!'}}}});
-				client = null;
-				str = null;
-			}else{
+				if(client && typeof client.red === 'function'){
+					client.red({taixiu:{chat:{message:{user:'***Số dư không đủ để chát***', value:'!'}}}});
+				}
+				return;
+			}
+			
+			var tentk = user.name;
 	
                    
-					TXChat.findOne({}, 'uid value', {sort:{'_id':-1}}, function(err, post) {
-							if (!post || post.uid != client.UID || (post.uid == client.UID && post.value != str)) {
-								TXChat.create({'uid':client.UID, 'name':client.profile.name, 'value':str});
-								let top = getindex(client.redT.listTop,client.profile.name);
-						
-						Object.values(client.redT.users).forEach(function(users){
-							users.forEach(function(client){
-								client.red({taixiu:{chat:{message:{user: tentk, value: str, top : top}}}});
-								//var content = { taixiu: { chat: { message: { user: client.profile.name, value: str, top : top } } } };
-								//client.red(content);
-							});
+				TXChat.findOne({}, 'uid value', {sort:{'_id':-1}}, function(err, post) {
+						if (!post || post.uid != client.UID || (post.uid == client.UID && post.value != str)) {
+							TXChat.create({'uid':client.UID, 'name':client.profile.name, 'value':str});
+							let top = getindex(client.redT.listTop,client.profile.name);
+					
+					Object.values(client.redT.users).forEach(function(users){
+						users.forEach(function(client){
+							client.red({taixiu:{chat:{message:{user: tentk, value: str, top : top}}}});
+							//var content = { taixiu: { chat: { message: { user: client.profile.name, value: str, top : top } } } };
+							//client.red(content);
 						});
-							}
-							str = null;
-							client = null;
-						});
-		
-		 
-
-	
-			}
-});
+					});
+						}
+						str = null;
+						client = null;
+					});
+		});
 	}
 	},1000);
 	return Chat;
