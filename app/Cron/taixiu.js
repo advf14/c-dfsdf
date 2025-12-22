@@ -274,49 +274,48 @@ let setTaiXiu_user = function(phien, dice){
                                                         TaiXiu_User.updateOne({uid: obj.uid}, {$set: update}).exec();
                                                     }
 
-                                                    // Gửi thông báo thắng cược
-                                                    if (obj.win > 0) {
-                                                        if (io.users[obj.uid] && Array.isArray(io.users[obj.uid])) {
-                                                            io.users[obj.uid].forEach(function(client) {
-                                                                if (client && typeof client.red === 'function') {
-                                                                    // Gửi thông báo cập nhật số dư
-                                                                    client.red({
-                                                                        user: {red: user.red},
-                                                                        taixiu: {
-                                                                            status: {
-                                                                                win: winAmount,
-                                                                                select: obj.select,
-                                                                                bet: bet,
-                                                                                balance: user.red
-                                                                            }
+                                                    // Gửi thông báo thắng/thua cược cho tất cả người chơi
+                                                    if (io.users[obj.uid] && Array.isArray(io.users[obj.uid])) {
+                                                        io.users[obj.uid].forEach(function(client) {
+                                                            if (client && typeof client.red === 'function') {
+                                                                // Gửi thông báo cập nhật số dư
+                                                                client.red({
+                                                                    user: {red: user.red},
+                                                                    taixiu: {
+                                                                        result: {
+                                                                            win: obj.win,
+                                                                            winAmount: winAmount,
+                                                                            betAmount: obj.bet,
+                                                                            select: obj.select,
+                                                                            balance: user.red,
+                                                                            phien: phien
                                                                         }
-                                                                    });
-                                                                }
-                                                            });
-                                                        }
+                                                                    }
+                                                                });
+                                                            }
+                                                        });
                                                     }
                                                     
                                                     resolve({uid: obj.uid, betwin: obj.betwin, win: winAmount});
-                                                }else{
-                                                        resolve(null);
-                                                }
+                                                });
                                         });
                                 });
                                 return action;
-                        }))
-                     TXCuocOne.find({'phien':phien}, 'betwin uid', {sort:{betwin:-1}, limit:17}, function(err, results) {
-                        Promise.all(results.map(function(obj){
-                                let action =  new Promise(function(resolve, reject) {
-                                        UserInfo.findOne({id:obj.uid}, 'name', function(err, users){
-                                                                resolve({users:users.name, bet:obj.betwin, game:'Tài Xỉu'});
+                        })).then(function(resultList) {
+                                        // Lấy top người chơi
+                                        TXCuocOne.find({'phien':phien}, 'betwin uid', {sort:{betwin:-1}, limit:17}, function(err, results) {
+                                                Promise.all(results.map(function(obj){
+                                                        return new Promise(function(resolve, reject) {
+                                                                UserInfo.findOne({id:obj.uid}, 'name', function(err, users){
+                                                                        resolve({users:users.name, bet:obj.betwin, game:'Tài Xỉu'});
+                                                                });
                                                         });
-                                })
-                                return action;
-                        }))
-                        .then(result => {
-                                                io.sendInHome({news:{a:result}});
+                                                }))
+                                                .then(result => {
+                                                        io.sendInHome({news:{a:result}});
+                                                });
                                         });
-                });
+                                });
                 }
         });
 }
@@ -479,6 +478,27 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                 TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:betwin, tWinRed:betwin, tRedPlay: obj.bet}}).exec();
                                                                 LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:true, thanhtoan:1}, $inc:{lswin:betwin, tienhienco:redUpdate}}).exec();
                                                                 HU_game.updateOne({game:'taixiumd5'}, {$inc:{hutx:addquyhu}}).exec();
+                                                                TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:betwin, tWinRed:betwin, tRedPlay:obj.bet}}).exec();
+                                                                
+                                                                // Gửi thông báo cộng tiền thắng cho client
+                                                                if (io.users[obj.uid] && Array.isArray(io.users[obj.uid])) {
+                                                                    io.users[obj.uid].forEach(function(client) {
+                                                                        if (client && typeof client.red === 'function') {
+                                                                            client.red({
+                                                                                user: {red: redUpdate},
+                                                                                taixiu: {
+                                                                                    win: {
+                                                                                        amount: betwin,
+                                                                                        bonus: addnohu,
+                                                                                        total: redUpdate,
+                                                                                        phien: game_id
+                                                                                    }
+                                                                                }
+                                                                            });
+                                                                        }
+                                                                    });
+                                                                }
+                                                                
                                                                 return TXCuocOne.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:true}, $inc:{betwin:betwin}}).exec();
                                                         }else{
                                                                 obj.thanhtoan = true;
@@ -488,6 +508,22 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                 !obj.bot && UserInfo.updateOne({id:obj.uid}, {$inc:{totall:-obj.bet, redLost:obj.bet, redPlay:obj.bet}}).exec();
                                                                  LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{thanhtoan:1},$inc:{lswin:-obj.bet}}).exec();
                                                                 TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:-obj.bet, tLostRed:obj.bet, tRedPlay:obj.bet}}).exec();
+                                                                
+                                                                // Gửi thông báo thua cược cho client
+                                                                if (io.users[obj.uid] && Array.isArray(io.users[obj.uid])) {
+                                                                    io.users[obj.uid].forEach(function(client) {
+                                                                        if (client && typeof client.red === 'function') {
+                                                                            client.red({
+                                                                                taixiu: {
+                                                                                    lose: {
+                                                                                        amount: obj.bet,
+                                                                                        phien: game_id
+                                                                                    }
+                                                                                }
+                                                                            });
+                                                                        }
+                                                                    });
+                                                                }
                                                         }
                                                 }
                                         } else if (obj.select === false) { // Tổng Red Xỉu
@@ -541,6 +577,25 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                         LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:win, thanhtoan:1}, $inc:{tralai:obj.tralai, lswin:betwinP, tienhienco:redUpdate}}).exec();
                                                                         TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:betwinP, tWinRed:betwinP, tRedPlay:betPlay}}).exec();
                                     HU_game.updateOne({game:'taixiumd5'}, {$inc:{hutx:addquyhu}}).exec();
+                                    
+                                    // Gửi thông báo cộng tiền thắng cho client
+                                    if (io.users[obj.uid] && Array.isArray(io.users[obj.uid])) {
+                                        io.users[obj.uid].forEach(function(client) {
+                                            if (client && typeof client.red === 'function') {
+                                                client.red({
+                                                    user: {red: redUpdate},
+                                                    taixiu: {
+                                                        win: {
+                                                            amount: betwinP,
+                                                            bonus: addnohu,
+                                                            total: redUpdate,
+                                                            phien: game_id
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    }
                                                                         if (!!vipConfig && vipConfig.status === true) {
                                                                                 TopVip.updateOne({'name':obj.name},{$inc:{vip:betPlay}}).exec(function(errV, userV){
                                                                                         if (!!userV && userV.n === 0) {
@@ -600,6 +655,26 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                 TaiXiu_User.updateOne({uid: obj.uid}, {$inc:{totall:betwin, tWinRed:betwin, tRedPlay: obj.bet}}).exec();
                                                                  LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:true, thanhtoan:1}, $inc:{lswin:betwin, tienhienco:redUpdate}}).exec();
                                                                  HU_game.updateOne({game:'taixiumd5'}, {$inc:{hutx:addquyhu}}).exec();
+                                                                 
+                                                                 // Gửi thông báo cộng tiền thắng cho client
+                                                                 if (io.users[obj.uid] && Array.isArray(io.users[obj.uid])) {
+                                                                    io.users[obj.uid].forEach(function(client) {
+                                                                        if (client && typeof client.red === 'function') {
+                                                                            client.red({
+                                                                                user: {red: redUpdate},
+                                                                                taixiu: {
+                                                                                    win: {
+                                                                                        amount: betwin,
+                                                                                        bonus: addnohu,
+                                                                                        total: redUpdate,
+                                                                                        phien: game_id
+                                                                                    }
+                                                                                }
+                                                                            });
+                                                                        }
+                                                                    });
+                                                                 }
+                                                                 
                                                                 return TXCuocOne.updateOne({uid:obj.uid, phien:game_id}, {$set:{win:true}, $inc:{betwin:betwin}}).exec();
                                                         }else{
                                                                 Helpers.MissionAddCurrent(obj.uid, (obj.bet*0.02>>0));
@@ -609,6 +684,22 @@ let thongtin_thanhtoan = function(game_id, dice = false){
                                                                 !obj.bot && UserInfo.updateOne({id:obj.uid}, {$inc:{totall:-obj.bet, redLost:obj.bet, redPlay:obj.bet}}).exec();
                                                                 LScuoc.updateOne({uid:obj.uid, phien:game_id}, {$set:{thanhtoan:1}, $inc:{lswin:-obj.bet}}).exec();
                                                                 TaiXiu_User.updateOne({uid:obj.uid}, {$inc:{totall:-obj.bet, tLostRed:obj.bet, tRedPlay:obj.bet}}).exec();
+                                                                
+                                                                // Gửi thông báo thua cược cho client
+                                                                if (io.users[obj.uid] && Array.isArray(io.users[obj.uid])) {
+                                                                    io.users[obj.uid].forEach(function(client) {
+                                                                        if (client && typeof client.red === 'function') {
+                                                                            client.red({
+                                                                                taixiu: {
+                                                                                    lose: {
+                                                                                        amount: obj.bet,
+                                                                                        phien: game_id
+                                                                                    }
+                                                                                }
+                                                                            });
+                                                                        }
+                                                                    });
+                                                                }
                                                         }
                                                 }
                                         }
@@ -824,12 +915,15 @@ let playGame = function(){
                                         TXPhien.create({'dice1':dice1, 'dice2':dice2, 'dice3':dice3, 'time':new Date()}, function(err, create){
                                                 if (!!create) {
                                                         io.TaiXiu_phien = create.id+1;
-                                                        thongtin_thanhtoan(create.id, dice1+dice2+dice3);
-                                                        io.sendAllUser({taixiu: {finish:{dices:[create.dice1, create.dice2, create.dice3], phien:create.id}}});
+                                                        let diceTotal = dice1+dice2+dice3;
+                                                        thongtin_thanhtoan(create.id, diceTotal);
+                                                        
+                                                        // Gửi kết quả kèm thông tin tiền thắng
+                                                        io.sendAllUser({taixiu: {finish:{dices:[create.dice1, create.dice2, create.dice3], phien:create.id, total:diceTotal}}});
 
                                                         Object.values(io.admins).forEach(function(admin){
                                                                 admin.forEach(function(client){
-                                                                        client.red({taixiu: {finish:{dices:[create.dice1, create.dice2, create.dice3], phien:create.id}}});
+                                                                        client.red({taixiu: {finish:{dices:[create.dice1, create.dice2, create.dice3], phien:create.id, total:diceTotal}}});
                                                                         client = null;
                                                                 });
                                                                 admin = null;

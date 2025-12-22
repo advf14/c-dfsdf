@@ -192,7 +192,7 @@ var cuoc = function(client, data){
 									io.taixiuAdmin.list.unshift({name:user.name, select:select, bet:bet, time:new Date()});
 									io = null;
 									TXCuoc.create({uid:client.UID, name:user.name, phien:phien, bet:bet, select:select, time:new Date()});
-									LScuoc.updateOne({uid:client.UID, phien:phien}, {$set:{tienhienco:user.red}, $inc:{bet:bet}}).exec();
+									LScuoc.updateOne({uid:client.UID, phien:phien}, {$set:{tienhienco:user.red, dichvu:'Tài Xỉu MD5'}, $inc:{bet:bet}}).exec();
                                     // LScuoc.updateOne({uid:client.UID, phien:phien, select:select, bet:isCuoc.bet});
 								   // LScuoc.create({uid:client.UID, name:user.name, game:'Tài Xỉu MD5', phien:phien, select:select, tiencuoc:bet, chitiet:'Đặt Cược Phiên'+phien, tienthang:'0', tienhienco:user.red, time:new Date()});
 									var taixiuVery = select ? {red_me_tai:isCuoc.bet} : {red_me_xiu:isCuoc.bet};
