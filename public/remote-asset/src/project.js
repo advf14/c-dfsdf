@@ -381,12 +381,22 @@ this.cardSelect = 0;
 this.game_round = 0;
 cc.RedT.inGame = this;
 cc.RedT.MiniPanel.node.parent = this.redhat;
+if (this.mePlayer && this.mePlayer.nickname) {
 this.mePlayer.nickname.string = cc.RedT.user.name;
+}
+if (this.mePlayer && this.mePlayer.balans) {
 this.mePlayer.balans.string = n.numberWithCommas(cc.RedT.user.red);
+}
+if (this.mePlayer && typeof this.mePlayer.setAvatar === 'function') {
 this.mePlayer.setAvatar(cc.RedT.user.avatar);
+}
+if (this.player && Array.isArray(this.player)) {
 this.player.forEach(function(t) {
+if (t && typeof t.init === 'function') {
 t.init();
+}
 });
+}
 cc.RedT.send({
 scene: "bacay",
 g: {
@@ -1764,7 +1774,13 @@ cc.RedT.inGame.signOut();
 });
 },
 playClick: function() {
-0 !== this.volumeHieuUng && this.audioClick.play();
+if (0 !== this.volumeHieuUng && this.audioClick) {
+try {
+this.audioClick.play();
+} catch(e) {
+// Audio autoplay not allowed before user interaction
+}
+}
 },
 scene: function(t) {
 t.f.forEach(function(t) {
