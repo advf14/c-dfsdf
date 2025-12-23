@@ -1241,17 +1241,19 @@ hieuUng: function() {
 if (this.nohu) {
 this.nohu = !1;
 1 == this.isAuto && this.onClickStop();
-var t = cc.instantiate(this.RedT.PrefabNoHu), e = (t = t.getComponent(cc.Animation)).node.children[6].getComponent(cc.Label);
-this.RedT.nodeEfect.addChild(t.node);
-t.on("play", function() {
+var t = cc.instantiate(this.RedT.PrefabNoHu), e = null, a = t && t.getComponent(cc.Animation);
+a && a.node && a.node.children && a.node.children[6] && (e = a.node.children[6].getComponent(cc.Label));
+if (!e) return;
+this.RedT.nodeEfect.addChild(a.node);
+a.on("play", function() {
 var i = cc.callFunc(function() {
 cc.RedT.audio.playEf("winHu");
 n.numberTo(e, 0, this.win, 1e3, !0);
 }, this);
-t.node.runAction(cc.sequence(cc.delayTime(.25), i));
+a.node.runAction(cc.sequence(cc.delayTime(.25), i));
 }, this);
-t.on("finished", function() {
-t.node.destroy();
+a.on("finished", function() {
+a.node.destroy();
 this.labelWin.string = n.numberWithCommas(this.win);
 this.win = 0;
 this.hieuUng();
@@ -3179,8 +3181,6 @@ copy: function() {
 this.reels.forEach(function(t) {
 if (void 0 !== t.icons && void 0 !== t.icons[25] && void 0 !== t.icons[25].setIcon) {
 t.icons[25].setIcon(t.icons[2].data);
-t.icons[24].setIcon(t.icons[1].data);
-t.icons[23].setIcon(t.icons[0].data);
 }
 });
 },
@@ -3188,21 +3188,23 @@ hieuUng: function() {
 if (this.nohu) {
 this.nohu = !1;
 1 == this.isAuto && this.onClickStop();
-var t = cc.instantiate(this.RedT.PrefabNoHu), e = (t = t.getComponent(cc.Animation)).node.children[6].getComponent(cc.Label);
-this.RedT.nodeEfect.addChild(t.node);
-t.on("play", function() {
+var t = cc.instantiate(this.RedT.PrefabNoHu), e = null, a = t && t.getComponent(cc.Animation);
+a && a.node && a.node.children && a.node.children[6] && (e = a.node.children[6].getComponent(cc.Label));
+if (!e) return;
+this.RedT.nodeEfect.addChild(a.node);
+a.on("play", function() {
 var i = cc.callFunc(function() {
 cc.RedT.audio.playEf("winHu");
 n.numberTo(e, 0, this.win, 1e3, !0);
 }, this);
-t.node.runAction(cc.sequence(cc.delayTime(.25), i));
+a.node.runAction(cc.sequence(cc.delayTime(.25), i));
 }, this);
-t.on("finished", function() {
-t.node.destroy();
+a.on("finished", function() {
+a.node.destroy();
 this.win = 0;
 this.hieuUng();
 }, this);
-t.play();
+a.play();
 } else if (!this.nohu && this.isBigWin) {
 this.isBigWin = !1;
 var i = cc.instantiate(this.RedT.prefabBigWin);
@@ -4767,22 +4769,24 @@ void 0 !== cc.RedT.setting.caothap.a[e] ? t.spriteFrame = cc.RedT.util.card.getC
 }.bind(this));
 if (cc.RedT.setting.caothap.win) {
 if (this.nohu) {
-var t = cc.instantiate(this.RedT.PrefabNoHu), e = (t = t.getComponent(cc.Animation)).node.children[6].getComponent(cc.Label);
-this.RedT.nodeEfect.addChild(t.node);
-t.on("play", function() {
+var t = cc.instantiate(this.RedT.PrefabNoHu), e = null, a = t && t.getComponent(cc.Animation);
+a && a.node && a.node.children && a.node.children[6] && (e = a.node.children[6].getComponent(cc.Label));
+if (!e) return;
+this.RedT.nodeEfect.addChild(a.node);
+a.on("play", function() {
 var i = cc.callFunc(function() {
 cc.RedT.audio.playEf("winHu");
 n.numberTo(e, 0, this.nohu, 1e3, !0);
 }, this);
-t.node.runAction(cc.sequence(cc.delayTime(.25), i));
+a.node.runAction(cc.sequence(cc.delayTime(.25), i));
 }, this);
-t.on("finished", function() {
+a.on("finished", function() {
 this.nohu = !1;
 this.offPlay();
-t.node.destroy();
+a.node.destroy();
 cc.RedT.setting.caothap.win = 0;
 }, this);
-t.play();
+a.play();
 }
 } else {
 this.offPlay();
@@ -11510,21 +11514,23 @@ hieuUng: function() {
 if (void 0 !== this.win && this.win > 0) if (6 == this.winC) {
 this.winC = 0;
 1 == this.isAuto && this.onClickStop();
-var t = cc.instantiate(this.RedT.PrefabNoHu), e = (t = t.getComponent(cc.Animation)).node.children[6].getComponent(cc.Label);
-this.RedT.nodeEfect.addChild(t.node);
-t.on("play", function() {
+var t = cc.instantiate(this.RedT.PrefabNoHu), e = null, a = t && t.getComponent(cc.Animation);
+a && a.node && a.node.children && a.node.children[6] && (e = a.node.children[6].getComponent(cc.Label));
+if (!e) return;
+this.RedT.nodeEfect.addChild(a.node);
+a.on("play", function() {
 var i = cc.callFunc(function() {
 cc.RedT.audio.playEf("winHu");
 n.numberTo(e, 0, this.win, 1e3, !0);
 this.win = 0;
 }, this);
-t.node.runAction(cc.sequence(cc.delayTime(.25), i));
+a.node.runAction(cc.sequence(cc.delayTime(.25), i));
 }, this);
-t.on("finished", function() {
-t.node.destroy();
+a.on("finished", function() {
+a.node.destroy();
 this.hieuUng();
 }, this);
-t.play();
+a.play();
 } else if (5 == this.winC || 4 == this.winC) {
 var i = cc.instantiate(this.RedT.prefabBigWin);
 (i = i.getComponent(cc.Animation)).on("finished", function() {
@@ -12246,16 +12252,18 @@ hieuUng: function() {
 if (this.win > 0) {
 if (2 === this.winC) {
 1 == this.isAuto && this.onClickStop();
-var t = cc.instantiate(this.RedT.PrefabNoHu), e = (t = t.getComponent(cc.Animation)).node.children[6].getComponent(cc.Label);
-this.RedT.nodeEfect.addChild(t.node);
-t.on("play", function() {
+var t = cc.instantiate(this.RedT.PrefabNoHu), e = null, a = t && t.getComponent(cc.Animation);
+a && a.node && a.node.children && a.node.children[6] && (e = a.node.children[6].getComponent(cc.Label));
+if (!e) return;
+this.RedT.nodeEfect.addChild(a.node);
+a.on("play", function() {
 var i = cc.callFunc(function() {
 cc.RedT.audio.playEf("winHu");
 n.numberTo(e, 0, this.win, 1e3, !0);
 }, this);
-t.node.runAction(cc.sequence(cc.delayTime(.25), i));
+a.node.runAction(cc.sequence(cc.delayTime(.25), i));
 }, this);
-t.on("finished", function() {
+a.on("finished", function() {
 t.node.destroy();
 this.hieuUng();
 }, this);
@@ -21272,13 +21280,13 @@ onLoad: function() {
 this.ttOffset = null;
 this.ttOffset2 = null;
 this.toggleRuning = !1;
-this.content.children.forEach(function(t) {
-t.hu = t.children[3].getComponent(cc.Label);
-t.xHu = t.children[0].getComponent(cc.Sprite);
+this.content && Array.isArray(this.content.children) && this.content.children.forEach(function(t) {
+t && t.children && t.children.length > 3 && t.children[3] && (t.hu = t.children[3].getComponent(cc.Label));
+t && t.children && t.children.length && t.children[0] && (t.xHu = t.children[0].getComponent(cc.Sprite));
 });
-this.header = this.header.children.map(function(t) {
-return t.children[0].getComponent(cc.Label);
-});
+this.header = this.header && this.header.children ? this.header.children.map(function(t) {
+return t && t.children && t.children[0] ? t.children[0].getComponent(cc.Label) : null;
+}) : [];
 cc.RedT.setting.topHu = cc.RedT.setting.topHu || {};
 void 0 !== cc.RedT.setting.topHu.position && (this.node.position = cc.RedT.setting.topHu.position);
 void 0 !== cc.RedT.setting.topHu.open && (this.body.active = cc.RedT.setting.topHu.open);
@@ -21331,27 +21339,31 @@ this.body.active && this.onChangerData();
 this.onChangerGame();
 },
 onChangerData: function() {
-if (void 0 !== cc.RedT.setting.topHu.data) {
+var tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && this.content && Array.isArray(this.content.children)) {
 var t = [], e = this.content.children.map(function(e) {
-var i = e.name, n = cc.RedT.setting.topHu.data[i].filter(function(t) {
+var i = e.name, list = tHu[i], nArr = Array.isArray(list) ? list.filter(function(t) {
 return t.type == this.bet;
-}.bind(this));
+}.bind(this)) : [];
 t[i] = e;
-n.length ? n[0].name = i : n[0] = {
+var first = nArr.length ? nArr[0] : {
 name: i,
 bet: 0
 };
-return n[0];
+first.name || (first.name = i);
+return first;
 }.bind(this));
-(e = e.sort(function(t, e) {
+e && e.length && (e = e.sort(function(t, e) {
 return e.bet - t.bet;
 })).forEach(function(e, i) {
 var o = t[e.name];
+if (!o) return;
 o.stopAllActions();
 var c = -(75 * (i + 1) - 37.5);
 o.runAction(cc.moveTo(.2, cc.v2(0, c)));
-n.getOnlyNumberInString(o.hu.string) - e.bet != 0 && n.numberTo(o.hu, n.getOnlyNumberInString(o.hu.string), e.bet, 2e3, !0);
-if (e.balans > 0 && this.x[e.x - 2]) {
+var betVal = e.bet || 0;
+n.getOnlyNumberInString(o.hu.string) - betVal != 0 && n.numberTo(o.hu, n.getOnlyNumberInString(o.hu.string), betVal, 2e3, !0);
+if (e.balans > 0 && e.x && this.x[e.x - 2]) {
 o.xHu.node.active = !0;
 o.xHu.spriteFrame = this.x[e.x - 2];
 } else o.xHu.node.active = !1;
