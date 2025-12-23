@@ -1,0 +1,33 @@
+body, html {
+	height: 100%;
+}
+body {
+		background-image: url("../img/bg.jpg");
+		background-repeat: no-repeat;
+		background-attachment: fixed;
+}
+.banner {
+	padding-top: 30%;
+}
+.div-img-column {
+	padding: 5px;
+}
+.row {
+	margin-right: 0px !important;
+	margin-left: 0px !important;
+}
+@media only screen and (max-width: 1000px) {
+.div-img-column {
+	size: 80%;
+}
+#banner_left {
+	display: none;
+}
+#banner_right {
+	display: none;
+}
+
+body {
+	background-position: -1000px;
+}
+}

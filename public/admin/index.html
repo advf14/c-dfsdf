@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+
+  <title>YOUTUBE : SOURCE ALL</title>
+
+  <!--http://www.html5rocks.com/en/mobile/mobifying/-->
+  <meta name="viewport"
+        content="width=device-width,user-scalable=no,initial-scale=1, minimum-scale=1,maximum-scale=1"/>
+
+  <!--https://developer.apple.com/library/safari/documentation/AppleApplications/Reference/SafariHTMLRef/Articles/MetaTags.html-->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- force webkit on 360 -->
+  <meta name="renderer" content="webkit"/>
+  <meta name="force-rendering" content="webkit"/>
+  <!-- force edge on IE -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <meta name="msapplication-tap-highlight" content="no">
+
+  <!-- force full screen on some browser -->
+  <meta name="full-screen" content="yes"/>
+  <meta name="x5-fullscreen" content="true"/>
+  <meta name="360-fullscreen" content="true"/>
+  
+  <!-- force screen orientation on some browser -->
+  <meta name="screen-orientation" content=""/>
+  <meta name="x5-orientation" content="">
+
+  <!--fix fireball/issues/3568 -->
+  <!--<meta name="browsermode" content="application">-->
+  <meta name="x5-page-mode" content="app">
+
+  <!--<link rel="apple-touch-icon" href=".png" />-->
+  <!--<link rel="apple-touch-icon-precomposed" href=".png" />-->
+
+  <link rel="stylesheet" type="text/css" href="style-mobile.6e9cd.css"/>
+  <link rel="icon" href="favicon.8de18.ico"/>
+</head>
+<body>
+  <canvas id="GameCanvas" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
+  <div id="splash">
+    <div class="progress-bar stripes">
+      <span style="width: 0%"></span>
+    </div>
+  </div>
+
+<script type="text/javascript">
+(function () {
+  if (typeof window === 'undefined' || typeof window.WebSocket === 'undefined') return;
+  var NativeWebSocket = window.WebSocket;
+  var locationObj = window.location;
+  function rewriteUrl(url) {
+    try {
+      if (typeof url !== 'string' || !locationObj) return url;
+      var hostname = locationObj.hostname;
+      if (locationObj.protocol === 'https:') {
+        url = url.replace(/^ws:\/\//i, 'wss://');
+        url = url.replace(/^http:\/\//i, 'https://');
+      }
+      url = url.replace(/127\.0\.0\.1|localhost/ig, hostname);
+    } catch (e) {}
+    return url;
+  }
+  function WrappedWebSocket(url, protocols) {
+    try {
+      url = rewriteUrl(url);
+    } catch (e) {}
+    return protocols !== undefined ? new NativeWebSocket(url, protocols) : new NativeWebSocket(url);
+  }
+  WrappedWebSocket.prototype = NativeWebSocket.prototype;
+  try { Object.setPrototypeOf(WrappedWebSocket, NativeWebSocket); } catch (e) {}
+  try {
+    for (var k in NativeWebSocket) {
+      try { WrappedWebSocket[k] = NativeWebSocket[k]; } catch (e) {}
+    }
+  } catch (e) {}
+  window.WebSocket = WrappedWebSocket;
+
+  try {
+    if (window.XMLHttpRequest && window.XMLHttpRequest.prototype && window.XMLHttpRequest.prototype.open) {
+      var origXHROpen = window.XMLHttpRequest.prototype.open;
+      window.XMLHttpRequest.prototype.open = function (method, url) {
+        arguments[1] = rewriteUrl(url);
+        return origXHROpen.apply(this, arguments);
+      };
+    }
+  } catch (e) {}
+
+  try {
+    if (typeof window.fetch === 'function') {
+      var origFetch = window.fetch;
+      window.fetch = function (input, init) {
+        try {
+          if (typeof input === 'string') {
+            return origFetch(rewriteUrl(input), init);
+          }
+          if (input && typeof input.url === 'string' && typeof window.Request === 'function') {
+            input = new Request(rewriteUrl(input.url), input);
+          }
+        } catch (e) {}
+        return origFetch(input, init);
+      };
+    }
+  } catch (e) {}
+})();
+</script>
+
+<script src="src/settings.5390f.js" charset="utf-8"></script>
+
+<script src="main.5b0af.js" charset="utf-8"></script>
+
+<script type="text/javascript">
+(function () {
+    // open web debugger console
+    if (typeof VConsole !== 'undefined') {
+        window.vConsole = new VConsole();
+    }
+
+    var splash = document.getElementById('splash');
+    splash.style.display = 'block';
+
+    var cocos2d = document.createElement('script');
+    cocos2d.async = true;
+    cocos2d.src = window._CCSettings.debug ? 'cocos2d-js.js' : 'cocos2d-js-min.2c26a.js';
+
+    var engineLoaded = function () {
+        document.body.removeChild(cocos2d);
+        cocos2d.removeEventListener('load', engineLoaded, false);
+        window.boot();
+    };
+    cocos2d.addEventListener('load', engineLoaded, false);
+    document.body.appendChild(cocos2d);
+})();
+</script>
+</body>
+</html>
