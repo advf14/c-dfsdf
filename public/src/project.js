@@ -2855,15 +2855,16 @@ e.mainLine = i;
 if (t) {
 e.RedT.labelLine.string = cc.RedT.setting.big_babol.line.length + " dòng";
 e.nodeLine.children.forEach(function(t, e) {
-if (cc.RedT.setting.big_babol.line.filter(function(e) {
-return e == t.name;
-}).length) {
-t.isSelect = !0;
-t.children[0].color = cc.Color.WHITE;
-} else {
-t.isSelect = !1;
-t.children[0].color = cc.color(155, 155, 155);
-}
+			var _bb_lines = cc.RedT.setting && cc.RedT.setting.big_babol && cc.RedT.setting.big_babol.line && Array.isArray(cc.RedT.setting.big_babol.line) ? cc.RedT.setting.big_babol.line : [];
+			if (_bb_lines.filter(function(e) {
+				return e == t.name;
+			}).length) {
+				t.isSelect = !0;
+				t.children[0].color = cc.Color.WHITE;
+			} else {
+				t.isSelect = !1;
+				t.children[0].color = cc.color(155, 155, 155);
+			}
 });
 } else e.selectAll(null, "1");
 });
@@ -19653,10 +19654,11 @@ i - o != 0 && n.numberTo(t.hu, i, o, 2e3, !0);
 onGetAllHu: function() {
 var t = this, tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
 if (tHu && Array.isArray(tHu.zeus)) {
-Promise.all(tHu.zeus.filter(function(t) {
+var _zeus_red = tHu.zeus.filter(function(t) {
 return 1 == t.red;
-})).then(function(e) {
-if (!e.length) return;
+});
+Promise.all(_zeus_red).then(function(e) {
+if (!e || !e.length) return;
 var i = e.filter(function(t) {
 return 100 == t.type;
 }), o = e.filter(function(t) {
