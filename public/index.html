@@ -116,13 +116,22 @@
   var NativeWebSocket = window.WebSocket;
   var ready = false;
   var queue = [];
+  function flushQueue() {
+    var cached = queue.splice(0);
+    cached.forEach(function (item) {
+      try { item.handler.call(item.ws, item.event); } catch (e) {
+        item.retries = (item.retries || 0) + 1;
+        if (item.retries <= 5) {
+          setTimeout(function () { queue.push(item); }, 200);
+        }
+        // quá 5 lần thì bỏ qua để tránh vòng lặp vô hạn
+      }
+    });
+  }
   function markReady() {
     if (ready) return;
     ready = true;
-    var cached = queue.splice(0);
-    cached.forEach(function (item) {
-      try { item.handler.call(item.ws, item.event); } catch (e) {}
-    });
+    setTimeout(flushQueue, 500); // đợi thêm 1 tick sau khi scene launch
   }
   var waitScene = setInterval(function () {
     try {
@@ -132,6 +141,8 @@
       }
     } catch (e) {}
   }, 100);
+  // fallback: nếu EVENT_AFTER_SCENE_LAUNCH không bắn (lỗi hiếm), tự ready sau 3s
+  setTimeout(markReady, 3000);
 
   function wrapHandler(ws, handler) {
     if (typeof handler !== 'function') return handler;

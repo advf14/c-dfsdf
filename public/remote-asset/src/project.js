@@ -1224,11 +1224,17 @@ e > 2 && e < 20 && t.random();
 });
 },
 onGetHu: function() {
-if (void 0 !== cc.RedT.setting.topHu.data && this.node.active) {
-var t = cc.RedT.setting.topHu.data.arb.filter(function(t) {
+if (this.node && this.node.active) {
+var tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && Array.isArray(tHu.arb)) {
+var t = tHu.arb.filter(function(t) {
 return t.type == this.cuoc;
-}.bind(this)), e = n.getOnlyNumberInString(this.hu.string), i = t[0].bet;
+}.bind(this));
+if (t.length) {
+var e = n.getOnlyNumberInString(this.hu.string), i = t[0].bet;
 e - i != 0 && n.numberTo(this.hu, e, i, 1500, !0);
+}
+}
 }
 },
 hieuUng: function() {
@@ -3252,14 +3258,19 @@ e > 2 && e < 23 && t.random();
 });
 },
 onGetHu: function() {
-if (void 0 !== cc.RedT.setting.topHu.data && this.node.active) {
-var t = cc.RedT.setting.topHu.data.big_babol.filter(function(t) {
+if (this.node && this.node.active) {
+var tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && Array.isArray(tHu.big_babol)) {
+var t = tHu.big_babol.filter(function(t) {
 return t.type == this.cuoc;
-}.bind(this)), e = n.getOnlyNumberInString(this.hu.string), i = t[0].bet;
+}.bind(this));
+if (t.length) {
+var e = n.getOnlyNumberInString(this.hu.string), i = t[0].bet;
 e - i != 0 && n.numberTo(this.hu, e, i, 2e3, !0);
 }
 }
-});
+}
+},
 cc._RF.pop();
 }, {
 BigBabol_line: "BigBabol_line",
@@ -4215,13 +4226,16 @@ cc.RedT.inGame.signOut();
 },
 onGetHu: function() {
 var t = this;
-if (void 0 !== cc.RedT.setting.topHu.data) {
-var e = n.getOnlyNumberInString(this.bet.string);
-Promise.all(cc.RedT.setting.topHu.data.candy.filter(function(t) {
+var tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && Array.isArray(tHu.candy)) {
+var e = n.getOnlyNumberInString(this.bet.string), r = tHu.candy.filter(function(t) {
 return t.type == e;
-})).then(function(e) {
+});
+r.length && Promise.all(r).then(function(e) {
+if (e.length) {
 var i = n.getOnlyNumberInString(t.hu.string), o = e[0].bet;
 i - o != 0 && n.numberTo(t.hu, i, o, 2e3, !0);
+}
 });
 }
 }
@@ -4849,11 +4863,17 @@ cc.RedT.setting.caothap.connect = !1;
 this.reSetPhien();
 },
 onGetHu: function() {
-if (void 0 !== cc.RedT.setting.topHu.data && this.node.active) {
-var t = cc.RedT.setting.topHu.data.caothap.filter(function(t) {
+if (this.node && this.node.active) {
+var tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && Array.isArray(tHu.caothap)) {
+var t = tHu.caothap.filter(function(t) {
 return t.type == this.cuoc;
-}.bind(this)), e = n.getOnlyNumberInString(this.hu.string), i = t[0].bet;
+}.bind(this));
+if (t.length) {
+var e = n.getOnlyNumberInString(this.hu.string), i = t[0].bet;
 e - i != 0 && n.numberTo(this.hu, e, i, 2e3, !0);
+}
+}
 }
 }
 });
@@ -6066,14 +6086,16 @@ cc.RedT.inGame.signOut();
 });
 },
 onGetHu: function() {
-var t = this;
-if (void 0 !== cc.RedT.setting.topHu.data) {
-var e = n.getOnlyNumberInString(this.bet.string);
-Promise.all(cc.RedT.setting.topHu.data.long.filter(function(t) {
+var t = this, tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && Array.isArray(tHu.long)) {
+var e = n.getOnlyNumberInString(this.bet.string), r = tHu.long.filter(function(t) {
 return t.type == e;
-})).then(function(e) {
+});
+r.length && Promise.all(r).then(function(e) {
+if (e.length) {
 var i = n.getOnlyNumberInString(t.hu.string), o = e[0].bet;
 i - o != 0 && n.numberTo(t.hu, i, o, 2e3, !0);
+}
 });
 }
 },
@@ -9531,100 +9553,42 @@ telegram: function() {
 cc.sys.openURL("https://t.me/rv88fun");
 },
 onGetHu: function() {
-var t = this;
-if (void 0 !== cc.RedT.setting.topHu.data) {
-Promise.all(cc.RedT.setting.topHu.data.vq_red.filter(function(t) {
-return 1 == t.red;
-})).then(function(e) {
+var t = this, tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu) {
+var safeFilter = function(arr, fn) {
+return Array.isArray(arr) ? arr.filter(fn) : [];
+};
+var safeUpdate = function(listPromise, huLabel, tempLabel) {
+listPromise.then(function(e) {
+if (!e.length) return;
 var i = e.filter(function(t) {
 return 100 == t.type;
 }), o = e.filter(function(t) {
 return 1e3 == t.type;
 }), c = e.filter(function(t) {
 return 1e4 == t.type;
-}), s = n.getOnlyNumberInString(t.iconVQRed.hu100.string), a = n.getOnlyNumberInString(t.iconVQRed.hu1k.string), h = n.getOnlyNumberInString(t.iconVQRed.hu10k.string);
-if (s - i[0].bet != 0) {
-n.numberTo(t.iconVQRed.hu100, n.getOnlyNumberInString(t.iconVQRed.hu100.string), i[0].bet, 4900, !0);
-n.numberTo(t.iconVQRedTemp.hu100, n.getOnlyNumberInString(t.iconVQRedTemp.hu100.string), i[0].bet, 4900, !0);
-}
-if (a - o[0].bet != 0) {
-n.numberTo(t.iconVQRed.hu1k, n.getOnlyNumberInString(t.iconVQRed.hu1k.string), o[0].bet, 4900, !0);
-n.numberTo(t.iconVQRedTemp.hu1k, n.getOnlyNumberInString(t.iconVQRedTemp.hu1k.string), o[0].bet, 4900, !0);
-}
-if (h - c[0].bet != 0) {
-n.numberTo(t.iconVQRed.hu10k, n.getOnlyNumberInString(t.iconVQRed.hu10k.string), c[0].bet, 4900, !0);
-n.numberTo(t.iconVQRedTemp.hu10k, n.getOnlyNumberInString(t.iconVQRedTemp.hu10k.string), c[0].bet, 4900, !0);
-}
+}), s = n.getOnlyNumberInString(huLabel.hu100.string), a = n.getOnlyNumberInString(huLabel.hu1k.string), h = n.getOnlyNumberInString(huLabel.hu10k.string);
+i.length && s - i[0].bet != 0 && (n.numberTo(huLabel.hu100, n.getOnlyNumberInString(huLabel.hu100.string), i[0].bet, 4900, !0), tempLabel && n.numberTo(tempLabel.hu100, n.getOnlyNumberInString(tempLabel.hu100.string), i[0].bet, 4900, !0));
+o.length && a - o[0].bet != 0 && (n.numberTo(huLabel.hu1k, n.getOnlyNumberInString(huLabel.hu1k.string), o[0].bet, 4900, !0), tempLabel && n.numberTo(tempLabel.hu1k, n.getOnlyNumberInString(tempLabel.hu1k.string), o[0].bet, 4900, !0));
+c.length && h - c[0].bet != 0 && (n.numberTo(huLabel.hu10k, n.getOnlyNumberInString(huLabel.hu10k.string), c[0].bet, 4900, !0), tempLabel && n.numberTo(tempLabel.hu10k, n.getOnlyNumberInString(tempLabel.hu10k.string), c[0].bet, 4900, !0));
 });
-Promise.all(cc.RedT.setting.topHu.data.candy.filter(function(t) {
+};
+var vq = safeFilter(tHu.vq_red, function(t) {
 return 1 == t.red;
-})).then(function(e) {
-var i = e.filter(function(t) {
-return 100 == t.type;
-}), o = e.filter(function(t) {
-return 1e3 == t.type;
-}), c = e.filter(function(t) {
-return 1e4 == t.type;
-}), s = n.getOnlyNumberInString(t.iconCandy.hu100.string), a = n.getOnlyNumberInString(t.iconCandy.hu1k.string), h = n.getOnlyNumberInString(t.iconCandy.hu10k.string);
-if (s - i[0].bet != 0) {
-n.numberTo(t.iconCandy.hu100, n.getOnlyNumberInString(t.iconCandy.hu100.string), i[0].bet, 4900, !0);
-n.numberTo(t.iconCandyTemp.hu100, n.getOnlyNumberInString(t.iconCandyTemp.hu100.string), i[0].bet, 4900, !0);
-}
-if (a - o[0].bet != 0) {
-n.numberTo(t.iconCandy.hu1k, n.getOnlyNumberInString(t.iconCandy.hu1k.string), o[0].bet, 4900, !0);
-n.numberTo(t.iconCandyTemp.hu1k, n.getOnlyNumberInString(t.iconCandyTemp.hu1k.string), o[0].bet, 4900, !0);
-}
-if (h - c[0].bet != 0) {
-n.numberTo(t.iconCandy.hu10k, n.getOnlyNumberInString(t.iconCandy.hu10k.string), c[0].bet, 4900, !0);
-n.numberTo(t.iconCandyTemp.hu10k, n.getOnlyNumberInString(t.iconCandyTemp.hu10k.string), c[0].bet, 4900, !0);
-}
 });
-Promise.all(cc.RedT.setting.topHu.data.zeus.filter(function(t) {
+vq.length && safeUpdate(Promise.all(vq), t.iconVQRed, t.iconVQRedTemp);
+var candy = safeFilter(tHu.candy, function(t) {
 return 1 == t.red;
-})).then(function(e) {
-var i = e.filter(function(t) {
-return 100 == t.type;
-}), o = e.filter(function(t) {
-return 1e3 == t.type;
-}), c = e.filter(function(t) {
-return 1e4 == t.type;
-}), s = n.getOnlyNumberInString(t.iconZeus.hu100.string), a = n.getOnlyNumberInString(t.iconZeus.hu1k.string), h = n.getOnlyNumberInString(t.iconZeus.hu10k.string);
-if (s - i[0].bet != 0) {
-n.numberTo(t.iconZeus.hu100, n.getOnlyNumberInString(t.iconZeus.hu100.string), i[0].bet, 4900, !0);
-n.numberTo(t.iconZeusTemp.hu100, n.getOnlyNumberInString(t.iconZeusTemp.hu100.string), i[0].bet, 4900, !0);
-}
-if (a - o[0].bet != 0) {
-n.numberTo(t.iconZeus.hu1k, n.getOnlyNumberInString(t.iconZeus.hu1k.string), o[0].bet, 4900, !0);
-n.numberTo(t.iconZeusTemp.hu1k, n.getOnlyNumberInString(t.iconZeusTemp.hu1k.string), o[0].bet, 4900, !0);
-}
-if (h - c[0].bet != 0) {
-n.numberTo(t.iconZeus.hu10k, n.getOnlyNumberInString(t.iconZeus.hu10k.string), c[0].bet, 4900, !0);
-n.numberTo(t.iconZeusTemp.hu10k, n.getOnlyNumberInString(t.iconZeusTemp.hu10k.string), c[0].bet, 4900, !0);
-}
 });
-Promise.all(cc.RedT.setting.topHu.data.long.filter(function(t) {
+candy.length && safeUpdate(Promise.all(candy), t.iconCandy, t.iconCandyTemp);
+var zeus = safeFilter(tHu.zeus, function(t) {
 return 1 == t.red;
-})).then(function(e) {
-var i = e.filter(function(t) {
-return 100 == t.type;
-}), o = e.filter(function(t) {
-return 1e3 == t.type;
-}), c = e.filter(function(t) {
-return 1e4 == t.type;
-}), s = n.getOnlyNumberInString(t.iconLongLan.hu100.string), a = n.getOnlyNumberInString(t.iconLongLan.hu1k.string), h = n.getOnlyNumberInString(t.iconLongLan.hu10k.string);
-if (s - i[0].bet != 0) {
-n.numberTo(t.iconLongLan.hu100, n.getOnlyNumberInString(t.iconLongLan.hu100.string), i[0].bet, 4900, !0);
-n.numberTo(t.iconLongLanTemp.hu100, n.getOnlyNumberInString(t.iconLongLanTemp.hu100.string), i[0].bet, 4900, !0);
-}
-if (a - o[0].bet != 0) {
-n.numberTo(t.iconLongLan.hu1k, n.getOnlyNumberInString(t.iconLongLan.hu1k.string), o[0].bet, 4900, !0);
-n.numberTo(t.iconLongLanTemp.hu1k, n.getOnlyNumberInString(t.iconLongLanTemp.hu1k.string), o[0].bet, 4900, !0);
-}
-if (h - c[0].bet != 0) {
-n.numberTo(t.iconLongLan.hu10k, n.getOnlyNumberInString(t.iconLongLan.hu10k.string), c[0].bet, 4900, !0);
-n.numberTo(t.iconLongLanTemp.hu10k, n.getOnlyNumberInString(t.iconLongLanTemp.hu10k.string), c[0].bet, 4900, !0);
-}
 });
+zeus.length && safeUpdate(Promise.all(zeus), t.iconZeus, t.iconZeusTemp);
+var longlan = safeFilter(tHu.long, function(t) {
+return 1 == t.red;
+});
+longlan.length && safeUpdate(Promise.all(longlan), t.iconLongLan, t.iconLongLanTemp);
 }
 }
 });
@@ -10040,13 +10004,19 @@ e.getComponent("mini_warning").text.string = t;
 this.notice.addChild(e);
 },
 onGetHu: function() {
-if (void 0 !== cc.RedT.setting.topHu.data && this.node.active) {
-var t = this, e = cc.RedT.setting.topHu.data.megaj.filter(function(e) {
+if (this.node && this.node.active) {
+var tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && Array.isArray(tHu.megaj)) {
+var t = this, e = tHu.megaj.filter(function(e) {
 return e.type == t.game;
-}), i = n.getOnlyNumberInString(this.hu.string), o = e[0].bet;
+});
+if (e.length) {
+var i = n.getOnlyNumberInString(this.hu.string), o = e[0].bet;
 i - o != 0 && n.numberTo(this.hu, i, o, 2e3, !0);
 }
 }
+}
+},
 });
 cc._RF.pop();
 }, {
@@ -11585,11 +11555,17 @@ this.sendSpin();
 }.bind(this), this.isSpeed ? 250 : 1e3) : this.offSpin();
 },
 onGetHu: function() {
-if (this.node.active && void 0 !== cc.RedT.setting.topHu.data) {
-var t = cc.RedT.setting.topHu.data.mini3cay.filter(function(t) {
+if (this.node && this.node.active) {
+var tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && Array.isArray(tHu.mini3cay)) {
+var t = tHu.mini3cay.filter(function(t) {
 return t.type == this.cuoc;
-}.bind(this)), e = n.getOnlyNumberInString(this.hu.string), i = t[0].bet;
+}.bind(this));
+if (t.length) {
+var e = n.getOnlyNumberInString(this.hu.string), i = t[0].bet;
 e - i != 0 && n.numberTo(this.hu, e, i, 2e3, !0);
+}
+}
 }
 },
 speed: function() {
@@ -12315,11 +12291,17 @@ this.onGetSpin();
 }.bind(this), this.isSpeed ? 250 : 1e3) : this.offSpin();
 },
 onGetHu: function() {
-if (this.node.active && void 0 !== cc.RedT.setting.topHu.data) {
-var t = cc.RedT.setting.topHu.data.mini_poker.filter(function(t) {
+if (this.node && this.node.active) {
+var tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && Array.isArray(tHu.mini_poker)) {
+var t = tHu.mini_poker.filter(function(t) {
 return t.type == this.cuoc;
-}.bind(this)), e = n.getOnlyNumberInString(this.hu.string), i = t[0].bet;
+}.bind(this));
+if (t.length) {
+var e = n.getOnlyNumberInString(this.hu.string), i = t[0].bet;
 e - i != 0 && n.numberTo(this.hu, e, i, 2e3, !0);
+}
+}
 }
 },
 onGetSpin: function() {
@@ -17258,14 +17240,16 @@ cc.RedT.inGame.signOut();
 });
 },
 onGetHu: function() {
-var t = this;
-if (void 0 !== cc.RedT.setting.topHu.data) {
-var e = n.getOnlyNumberInString(this.bet.string);
-Promise.all(cc.RedT.setting.topHu.data.vq_red.filter(function(t) {
+var t = this, tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && Array.isArray(tHu.vq_red)) {
+var e = n.getOnlyNumberInString(this.bet.string), r = tHu.vq_red.filter(function(t) {
 return t.type == e;
-})).then(function(e) {
+});
+r.length && Promise.all(r).then(function(e) {
+if (e.length) {
 var i = n.getOnlyNumberInString(t.hu.string), o = e[0].bet;
 i - o != 0 && n.numberTo(t.hu, i, o, 2e3, !0);
+}
 });
 }
 },
@@ -19629,24 +19613,26 @@ cc.RedT.inGame.signOut();
 });
 },
 onGetHu: function() {
-var t = this;
-if (void 0 !== cc.RedT.setting.topHu.data) {
-var e = n.getOnlyNumberInString(this.bet.string);
-Promise.all(cc.RedT.setting.topHu.data.zeus.filter(function(t) {
+var t = this, tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && Array.isArray(tHu.zeus)) {
+var e = n.getOnlyNumberInString(this.bet.string), r = tHu.zeus.filter(function(t) {
 return t.type == e;
-})).then(function(e) {
+});
+r.length && Promise.all(r).then(function(e) {
+if (e.length) {
 var i = n.getOnlyNumberInString(t.hu.string), o = e[0].bet;
 i - o != 0 && n.numberTo(t.hu, i, o, 2e3, !0);
+}
 });
 }
 },
 onGetAllHu: function() {
-var t = this;
-if (void 0 !== cc.RedT.setting.topHu.data) {
-n.getOnlyNumberInString(this.bet.string);
-Promise.all(cc.RedT.setting.topHu.data.zeus.filter(function(t) {
+var t = this, tHu = cc.RedT.setting.topHu && cc.RedT.setting.topHu.data;
+if (tHu && Array.isArray(tHu.zeus)) {
+Promise.all(tHu.zeus.filter(function(t) {
 return 1 == t.red;
 })).then(function(e) {
+if (!e.length) return;
 var i = e.filter(function(t) {
 return 100 == t.type;
 }), o = e.filter(function(t) {
@@ -19654,9 +19640,9 @@ return 1e3 == t.type;
 }), c = e.filter(function(t) {
 return 1e4 == t.type;
 }), s = n.getOnlyNumberInString(t.hu100.string), a = n.getOnlyNumberInString(t.hu1000.string), h = n.getOnlyNumberInString(t.hu10000.string);
-s - i[0].bet != 0 && n.numberTo(t.hu100, n.getOnlyNumberInString(t.hu100.string), i[0].bet, 4900, !0);
-a - o[0].bet != 0 && n.numberTo(t.hu1000, n.getOnlyNumberInString(t.hu1000.string), o[0].bet, 4900, !0);
-h - c[0].bet != 0 && n.numberTo(t.hu10000, n.getOnlyNumberInString(t.hu10000.string), c[0].bet, 4900, !0);
+i.length && s - i[0].bet != 0 && n.numberTo(t.hu100, n.getOnlyNumberInString(t.hu100.string), i[0].bet, 4900, !0);
+o.length && a - o[0].bet != 0 && n.numberTo(t.hu1000, n.getOnlyNumberInString(t.hu1000.string), o[0].bet, 4900, !0);
+c.length && h - c[0].bet != 0 && n.numberTo(t.hu10000, n.getOnlyNumberInString(t.hu10000.string), c[0].bet, 4900, !0);
 });
 }
 },
