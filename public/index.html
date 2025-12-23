@@ -109,6 +109,61 @@
 })();
 </script>
 
+<script type="text/javascript">
+// Queue socket messages until the first scene is ready to avoid getComponent/filter on undefined nodes.
+(function () {
+  if (typeof window === 'undefined' || typeof window.WebSocket === 'undefined') return;
+  var NativeWebSocket = window.WebSocket;
+  var ready = false;
+  var queue = [];
+  function markReady() {
+    if (ready) return;
+    ready = true;
+    var cached = queue.splice(0);
+    cached.forEach(function (item) {
+      try { item.handler.call(item.ws, item.event); } catch (e) {}
+    });
+  }
+  var waitScene = setInterval(function () {
+    try {
+      if (window.cc && cc.director && cc.Director && cc.director.once) {
+        cc.director.once(cc.Director.EVENT_AFTER_SCENE_LAUNCH, markReady);
+        clearInterval(waitScene);
+      }
+    } catch (e) {}
+  }, 100);
+
+  function wrapHandler(ws, handler) {
+    if (typeof handler !== 'function') return handler;
+    return function (event) {
+      if (!ready) {
+        queue.push({ ws: ws, handler: handler, event: event });
+        return;
+      }
+      return handler.call(ws, event);
+    };
+  }
+
+  window.WebSocket = function (url, protocols) {
+    var ws = protocols === undefined ? new NativeWebSocket(url) : new NativeWebSocket(url, protocols);
+    var add = ws.addEventListener.bind(ws);
+    ws.addEventListener = function (type, handler, options) {
+      if (type === 'message') handler = wrapHandler(ws, handler);
+      return add(type, handler, options);
+    };
+    Object.defineProperty(ws, 'onmessage', {
+      get: function () { return ws.__onmessage; },
+      set: function (fn) {
+        ws.__onmessage = wrapHandler(ws, fn);
+        add('message', ws.__onmessage);
+      }
+    });
+    return ws;
+  };
+  window.WebSocket.prototype = NativeWebSocket.prototype;
+})();
+</script>
+
 <script src="src/settings.js" charset="utf-8"></script>
 
 <script src="main.js" charset="utf-8"></script>
